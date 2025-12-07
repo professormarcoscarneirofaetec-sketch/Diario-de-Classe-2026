@@ -295,10 +295,7 @@ def main():
     aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
     
     # Inverte os mapas para usar o nome como label e o ID como valor
-    aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
-    disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
-    
-     
+        
 
     # --- Layout da Interface ---
     
