@@ -298,7 +298,7 @@ def main():
     aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
     disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
     
-    criar_db_e_tabelas() if nome_db == 'SQLite
+     
 
     # --- Layout da Interface ---
     
