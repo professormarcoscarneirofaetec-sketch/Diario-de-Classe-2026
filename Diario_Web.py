@@ -1,45 +1,10 @@
-# Diario_Web.py (Código Completo para Streamlit)
-
-# 1. Importe a biblioteca do Streamlit no topo do arquivo
+# TOP DO ARQUIVO: Imports
 import streamlit as st
 import pandas as pd
 import sqlite3
-import numpy
-import numpy as np # <-- MUDE DE "import numpy" para "import numpy as np"
-#   (restante dos seus imports)  
+import numpy as np # Importação com apelido 'np' corrigida
+from datetime import date # Necessário para date.today()
 
-# 2. Defina o banco de dados usando o cache de recurso do Streamlit
-# Esta função garante que o DB/conexão será criado APENAS UMA VEZ.
-@st.cache_resource
-# Funções restantes (calcular_media_final, lancar_aula_e_frequencia, inserir_nota_no_db, etc.)
-def calcular_media_final(avaliacoes):
-    p1_val = avaliacoes.get("P1"); p2_val = avaliacoes.get("P2"); p3_val = avaliacoes.get("P3")
-    p1 =  pd.notna(p1_val, nan=0.0) # ERRO: np não definido
-    
-def get_db_connection():
-    # O nome do arquivo DB deve ser 'diario_de_classe.db' ou o nome que você usou
-    conexao = sqlite3.connect('diario_de_classe.db')
-    return conexao
-
-# 3. Mude sua função 'criar_db_e_tabelas' para usar o cache
-def criar_db_e_tabelas():
-    # Não cria mais o DB aqui. A conexão já foi estabelecida pela função cacheada acima.
-    conn = get_db_connection() # Obtém a conexão única e cacheada
-    cursor = conn.cursor()
-    
-    # (Resto da sua lógica para criar as tabelas 'alunos', 'aulas', 'frequencia', 'avaliacoes') 
-    # NADA MUDA AQUI. Apenas a forma como você obtém a 'conn'.
-    
-    conn.commit()
-    return conn
-
-# 4. Na sua função 'main()', substitua 'criar_db_e_tabelas()'
-# Certifique-se de que a chamada para criar o DB e as tabelas está lá.
-#   (Dentro de main)  
-# if nome_db == 'SQLite':
-#     criar_db_e_tabelas() # A função irá usar o cache e criar as tabelas, se necessário
-
-#   (Restante do código)  
 # =========================================================================
 # CONSTANTES E DADOS DE EXEMPLO
 # =========================================================================
@@ -48,7 +13,8 @@ NOTA_APROVACAO_DIRETA = 7.0
 NOTA_MINIMA_P3 = 4.0
 NOTA_MINIMA_FINAL = 5.0
 DB_NAME = 'diario_de_classe.db' # O DB será criado no mesmo diretório
-#   (Insira aqui o dicionário 'diario_de_classe' completo, incluindo Alice, Bruno e Carol)
+
+# Dicionário de dados de exemplo
 diario_de_classe = {
     "Alice": {
         "Português Instrumental": {
@@ -82,25 +48,24 @@ diario_de_classe = {
     },
 }
 
-
 # =========================================================================
-# FUNÇÕES DE LÓGICA E BD (Copiar da Célula 1 do Notebook)
+# FUNÇÕES DE BD E LÓGICA
 # =========================================================================
 
-# @st.cache_data é crucial: ele impede que o Streamlit recrie o DB a cada interação.
-# O código dentro desta função só roda na primeira vez.
+# @st.cache_resource garante que o DB/conexão seja criado APENAS UMA VEZ no Streamlit Cloud.
 @st.cache_resource
 def criar_e_popular_sqlite():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA
+    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA (Em um novo deploy)
     cursor.execute("DROP TABLE IF EXISTS Frequencia")
     cursor.execute("DROP TABLE IF EXISTS Notas")
     cursor.execute("DROP TABLE IF EXISTS Aulas")
     cursor.execute("DROP TABLE IF EXISTS Alunos")
     cursor.execute("DROP TABLE IF EXISTS Disciplinas")
     cursor.execute("DROP TABLE IF EXISTS Turmas")
+    cursor.execute("DROP TABLE IF EXISTS Notas")
     conn.commit()
     
     # 2. CRIAÇÃO DAS TABELAS
@@ -112,8 +77,7 @@ def criar_e_popular_sqlite():
     cursor.execute('''CREATE TABLE Frequencia (id_frequencia INTEGER PRIMARY KEY, id_aula INTEGER, id_aluno INTEGER, presente BOOLEAN NOT NULL, UNIQUE(id_aula, id_aluno), FOREIGN KEY (id_aula) REFERENCES Aulas(id_aula), FOREIGN KEY (id_aluno) REFERENCES Alunos(id_aluno));''')
     conn.commit()
 
-    # 3. POPULANDO OS DADOS (Copiar a lógica de População da Célula 2)
-    # [Resto da lógica de inserção de Alunos, Disciplinas, Turmas, Aulas, Frequência, Notas]
+    # 3. POPULANDO OS DADOS
     aluno_map = {}; disciplina_map = {}; id_turma_padrao = 1
     
     cursor.execute("REPLACE INTO Turmas (id_turma, nome_turma, ano_letivo) VALUES (?, ?, ?)", (id_turma_padrao, "Exemplo 2025/1", 2025))
@@ -128,19 +92,24 @@ def criar_e_popular_sqlite():
     cursor.execute("SELECT id_aluno, nome FROM Alunos")
     for id_aluno, nome_aluno in cursor.fetchall(): aluno_map[nome_aluno] = id_aluno
 
+    # Retorno corrigido (resolve o erro de retorno da main)
+    return aluno_map, disciplina_map, id_turma_padrao
 
-# Funções restantes (calcular_media_final, lancar_aula_e_frequencia, inserir_nota_no_db, etc.)
+# Função auxiliar para obter conexão (se for usada fora do cache)
+def get_db_connection():
+    # Usa o cache para obter a mesma conexão
+    return criar_e_popular_sqlite()[0].connection
+
 def calcular_media_final(avaliacoes):
     p1_val = avaliacoes.get("P1")
     p2_val = avaliacoes.get("P2")
     p3_val = avaliacoes.get("P3")
 
-    # Garante que None/NaN sejam tratados como 0.0 na média parcial
+    # Garante que None/NaN sejam tratados como 0.0 na média parcial (usando Pandas)
     p1 = float(p1_val) if pd.notna(p1_val) else 0.0
     p2 = float(p2_val) if pd.notna(p2_val) else 0.0
     
     p3 = None
-    # Mantém P3 como None se for Nulo, pois ele afeta a situação
     if p3_val is not None and pd.notna(p3_val):
         p3 = float(p3_val)
     
@@ -148,8 +117,26 @@ def calcular_media_final(avaliacoes):
     nota_final = media_parcial
     situacao_nota = ""
     
-    #   (Restante da lógica)  
+    # Lógica de cálculo (restante do seu código)
+    if media_parcial >= NOTA_APROVACAO_DIRETA:
+        situacao_nota = "APROVADO POR MÉDIA"
+    elif media_parcial >= NOTA_MINIMA_P3:
+        if p3 is None:
+            situacao_nota = "PENDENTE (AGUARDANDO P3)"
+        else:
+            media_final_com_p3 = (media_parcial + p3) / 2
+            nota_final = media_final_com_p3
+            if nota_final >= NOTA_MINIMA_FINAL:
+                situacao_nota = "APROVADO APÓS P3"
+            else:
+                situacao_nota = "REPROVADO POR NOTA"
+    else: 
+        situacao_nota = "REPROVADO DIRETO"
+        
+    return nota_final, situacao_nota, media_parcial
 
+# O restante das funções (lancar_aula_e_frequencia, inserir_nota_no_db, etc.)
+# ... (O restante das suas funções estão corretas, assumindo que usam DB_NAME)
 def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -224,7 +211,6 @@ def atualizar_status_frequencia(id_frequencia, novo_status):
     finally:
         conn.close()
 
-# Função que gera e exibe o relatório no Streamlit
 def gerar_relatorio_final_completo():
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -287,34 +273,11 @@ def main():
     st.title("👨‍🏫 Diário de Classe Interativo")
     st.markdown("---")
     
-
-    # AQUI! Este é o local onde o bloco deve começar.
-    # ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-
-    # Inicialização do DB e obtenção dos mapas
-    aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
+    # 1. INICIALIZAÇÃO CORRIGIDA (Remove o SyntaxError e corrige o retorno)
+    # Recebe os 3 valores, ignorando o id_turma_padrao com _
+    aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite() 
     
-    # Inverte os mapas para usar o nome como label e o ID como valor
-        
-
-    # --- Layout da Interface ---
-    
-    # 1. Lançamento de Aulas e Frequência
-    st.header("🗓️ 1. Lançamento de Aulas")
-    with st.form("form_aulas"):
-        #   (Restante do código do formulário de aulas)  
-        pass
-        
-    # ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
-
-    #   (Resto da função main, incluindo o Painel de Chamada e Notas)  
-
-#   [Fim do arquivo, chamando if __name__ == "__main__": main()]
-
-    # Inicialização do DB e obtenção dos mapas
-    aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
-    
-    # Inverte os mapas para usar o nome como label e o ID como valor
+    # Inverte os mapas para uso na interface
     aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
     disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
