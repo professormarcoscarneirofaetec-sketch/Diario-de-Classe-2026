@@ -2,8 +2,8 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-import numpy as np # Importação com apelido 'np' corrigida
 from datetime import date # Necessário para date.today()
+import numpy as np # Necessário para compatibilidade (embora pd.notna seja preferível)
 
 # =========================================================================
 # CONSTANTES E DADOS DE EXEMPLO
@@ -14,7 +14,7 @@ NOTA_MINIMA_P3 = 4.0
 NOTA_MINIMA_FINAL = 5.0
 DB_NAME = 'diario_de_classe.db' # O DB será criado no mesmo diretório
 
-# Dicionário de dados de exemplo
+# Dicionário de dados de exemplo (Mantido conforme enviado)
 diario_de_classe = {
     "Alice": {
         "Português Instrumental": {
@@ -52,7 +52,7 @@ diario_de_classe = {
 # FUNÇÕES DE BD E LÓGICA
 # =========================================================================
 
-# @st.cache_resource garante que o DB/conexão seja criado APENAS UMA VEZ no Streamlit Cloud.
+# @st.cache_resource garante que o DB/conexão seja criado APENAS UMA VEZ.
 @st.cache_resource
 def criar_e_popular_sqlite():
     conn = sqlite3.connect(DB_NAME)
@@ -95,17 +95,17 @@ def criar_e_popular_sqlite():
     # Retorno corrigido (resolve o erro de retorno da main)
     return aluno_map, disciplina_map, id_turma_padrao
 
-# Função auxiliar para obter conexão (se for usada fora do cache)
+# Função auxiliar para obter conexão
 def get_db_connection():
-    # Usa o cache para obter a mesma conexão
-    return criar_e_popular_sqlite()[0].connection
+    # Chama a função cacheada para obter a conexão
+    return sqlite3.connect(DB_NAME) 
 
 def calcular_media_final(avaliacoes):
     p1_val = avaliacoes.get("P1")
     p2_val = avaliacoes.get("P2")
     p3_val = avaliacoes.get("P3")
 
-    # Garante que None/NaN sejam tratados como 0.0 na média parcial (usando Pandas)
+    # GARANTE que None/NaN sejam tratados como 0.0 na média parcial (Corrigido para usar pd.notna)
     p1 = float(p1_val) if pd.notna(p1_val) else 0.0
     p2 = float(p2_val) if pd.notna(p2_val) else 0.0
     
@@ -117,7 +117,7 @@ def calcular_media_final(avaliacoes):
     nota_final = media_parcial
     situacao_nota = ""
     
-    # Lógica de cálculo (restante do seu código)
+    # Lógica de cálculo 
     if media_parcial >= NOTA_APROVACAO_DIRETA:
         situacao_nota = "APROVADO POR MÉDIA"
     elif media_parcial >= NOTA_MINIMA_P3:
@@ -135,8 +135,6 @@ def calcular_media_final(avaliacoes):
         
     return nota_final, situacao_nota, media_parcial
 
-# O restante das funções (lancar_aula_e_frequencia, inserir_nota_no_db, etc.)
-# ... (O restante das suas funções estão corretas, assumindo que usam DB_NAME)
 def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -347,36 +345,4 @@ def main():
                 id_frequencia_registro = opcoes_ajuste[aluno_ajuste]
                 novo_status = 1 if novo_status_label == 'PRESENTE' else 0
                 
-                atualizar_status_frequencia(id_frequencia_registro, novo_status)
-                st.info("Atualização salva. Recarregue a chamada para confirmar.")
-                st.rerun()
-
-
-    # 3. Lançamento de Notas
-    st.header("🖊️ 3. Lançamento de Notas")
-    with st.form("form_notas"):
-        col1, col2, col3, col4 = st.columns(4)
-        
-        aluno_nome = col1.selectbox('Aluno(a)', options=list(aluno_map_nome.keys()))
-        disciplina_nome = col2.selectbox('Disciplina (Nota)', options=list(disciplina_map_nome.keys()), key="disc_nota")
-        tipo_avaliacao = col3.selectbox('Avaliação', options=['P1', 'P2', 'P3'])
-        valor_nota = col4.number_input('Nota (0-10)', min_value=0.0, max_value=10.0, step=0.5, value=7.0)
-        
-        id_aluno = aluno_map_nome.get(aluno_nome)
-        id_disciplina = disciplina_map_nome.get(disciplina_nome)
-
-        submitted_nota = st.form_submit_button("Inserir/Atualizar Nota")
-
-        if submitted_nota:
-            inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota)
-            st.rerun()
-
-
-    st.markdown("---")
-
-    # 4. Relatório Consolidado (Sempre no final)
-    st.header("📊 Relatório Consolidado")
-    gerar_relatorio_final_completo()
-
-if __name__ == "__main__":
-    main()
+                atualizar_status_frequencia(id_frequencia_registro, novo_status
