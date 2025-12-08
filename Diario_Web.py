@@ -157,7 +157,7 @@ def obter_frequencia_por_aula(id_disciplina, data_aula):
     id_aula = result[0]
     df = pd.read_sql_query(f"""
         SELECT 
-            A.nome AS Aluno, 
+            A.nome AS "Aluno", 
             F.id_frequencia,
             F.presente 
         FROM Frequencia F
@@ -255,14 +255,6 @@ def gerar_relatorio_final_completo():
 # FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
 # =========================================================================
 
-# =========================================================================
-# FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
-# =========================================================================
-
-# =========================================================================
-# FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
-# =========================================================================
-
 def main():
     # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
     st.set_page_config(layout="wide") 
@@ -276,8 +268,8 @@ def main():
     # definimos valores vazios para evitar um KeyError.
     try:
         # As chaves DEVEM ser o nome da variável no secrets.toml: "app_user" e "app_password"
-        SENHA_CORRETA = st.secrets["20710350Mar#"]
-        usuario_correto = st.secrets["marcos_carneiro"]
+        SENHA_CORRETA = st.secrets["302928"]
+        usuario_correto = st.secrets["marcos"]
     except KeyError:
         # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
         SENHA_CORRETA = ""
