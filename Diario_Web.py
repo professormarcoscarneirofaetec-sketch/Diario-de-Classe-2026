@@ -256,27 +256,36 @@ def gerar_relatorio_final_completo():
 # =========================================================================
 
 def main():
-    # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
+    # .streamlit/secrets.toml
+app_user="professor_marcos"
+app_password="20710350Mar#"
+	
+	# 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
     st.set_page_config(layout="wide") 
 
     # 2. Exibe o título e o separador (antes do login)
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
 
-    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
+    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS (Removido o ERRO FATAL)
+    
+    # Tentamos ler as credenciais. Se o arquivo secrets.toml não existir,
+    # definimos valores vazios (isso fará o login falhar até a configuração).
     try:
         SENHA_CORRETA = st.secrets["20710350Mar#"]
-        usuario_correto = st.secrets["marcos"]
+        usuario_correto = st.secrets["professor_marcos"]
     except KeyError:
-        st.error("❌ ERRO FATAL: As credenciais 'app_user' e 'app_password' não foram configuradas no arquivo .streamlit/secrets.toml. Configure os secrets para prosseguir.")
-        return # Impede que o restante do app seja carregado
+        # Se os segredos não existirem, usamos strings vazias.
+        # Isso faz com que o aplicativo mostre o prompt de login em loop.
+        SENHA_CORRETA = ""
+        usuario_correto = ""
         
     st.sidebar.title("Login")
     username = st.sidebar.text_input("Usuário")
     password = st.sidebar.text_input("Senha", type="password")
 
     # 4. PORTÃO DE LOGIN
-    if username == usuario_correto and password == SENHA_CORRETA:
+    if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
         st.sidebar.success("Login bem-sucedido!")
         
         # --- APLICATIVO REAL INICIA AQUI (INDENTADO) ---
