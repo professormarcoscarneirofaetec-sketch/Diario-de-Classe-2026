@@ -232,7 +232,7 @@ def gerar_relatorio_final_completo():
 
 
     def main():
-    st.set_page_config(layout="wide") 
+    st_set_page_config(layout="wide") 
 
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
