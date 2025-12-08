@@ -268,9 +268,12 @@ def main():
     # definimos valores vazios para evitar um KeyError.
     try:
         # As chaves DEVEM ser o nome da variável no secrets.toml: "app_user" e "app_password"
-        SENHA_CORRETA = st.secrets["302928"]
-        usuario_correto = st.secrets["marcos"]
-    except KeyError:
+        try:
+    # ❌ ERRO: Usando o VALOR da senha/usuário como CHAVE.
+    SENHA_CORRETA = st.secrets["20710350Mar#"] 
+    usuario_correto = st.secrets["marcos"] 
+except KeyError:
+    # ...
         # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
         SENHA_CORRETA = ""
         usuario_correto = ""
