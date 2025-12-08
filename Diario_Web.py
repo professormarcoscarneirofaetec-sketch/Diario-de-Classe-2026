@@ -14,7 +14,7 @@ NOTA_MINIMA_P3 = 4.0
 NOTA_MINIMA_FINAL = 5.0
 DB_NAME = 'diario_de_classe.db' # O DB será criado no mesmo diretório
 
-# Dicionário de dados de exemplo (Mantido conforme enviado)
+# Dicionário de dados de exemplo
 diario_de_classe = {
     "Alice": {
         "Português Instrumental": {
@@ -92,12 +92,11 @@ def criar_e_popular_sqlite():
     cursor.execute("SELECT id_aluno, nome FROM Alunos")
     for id_aluno, nome_aluno in cursor.fetchall(): aluno_map[nome_aluno] = id_aluno
 
-    # Retorno corrigido 
+    # Retorno corrigido (retorna 3 valores, resolvendo o TypeError na main)
     return aluno_map, disciplina_map, id_turma_padrao
 
 # Função auxiliar para obter conexão
 def get_db_connection():
-    # Retorna uma nova conexão (mas o DB já foi criado pelo cache)
     return sqlite3.connect(DB_NAME) 
 
 def calcular_media_final(avaliacoes):
