@@ -1,4 +1,4 @@
-# Diario_Web.py (Código FINAL e Corrigido para Streamlit com Login e Exportação)
+# Diario_Web.py (Código FINAL e Corrigido para Streamlit com Múltiplos Logins e Exportação)
 
 import streamlit as st
 import sqlite3
@@ -31,7 +31,7 @@ def criar_e_popular_sqlite():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA
+    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA (Importante para o reset da demo)
     cursor.execute("DROP TABLE IF EXISTS Frequencia")
     cursor.execute("DROP TABLE IF EXISTS Notas")
     cursor.execute("DROP TABLE IF EXISTS Aulas")
@@ -54,7 +54,8 @@ def criar_e_popular_sqlite():
     
     cursor.execute("REPLACE INTO Turmas (id_turma, nome_turma, ano_letivo) VALUES (?, ?, ?)", (id_turma_padrao, "Exemplo 2025/1", 2025))
     
-    disciplinas_list = ["Português Instrumental", "Inglês Instrumental"]
+    # Nova Versão (Exemplo para Educação Básica):
+    disciplinas_list = ["Língua Portuguesa", "Matemática", "Ciências", "História", "Geografia", "Artes"]
     for i, disc in enumerate(disciplinas_list): 
         cursor.execute("REPLACE INTO Disciplinas (id_disciplina, nome_disciplina) VALUES (?, ?)", (i+1, disc))
     cursor.execute("SELECT id_disciplina, nome_disciplina FROM Disciplinas")
@@ -102,6 +103,7 @@ def calcular_media_final(avaliacoes):
     
     return nota_final, situacao_nota, media_parcial
 
+
 def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -128,6 +130,7 @@ def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
     finally:
         conn.close()
 
+
 def inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota):
     if valor_nota is None or valor_nota < 0 or valor_nota > 10.0:
         st.warning("⚠️ Erro: Insira um valor de nota válido (0.0 a 10.0).")
@@ -135,12 +138,14 @@ def inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     try:
+        # REPLACE INTO permite inserção (criação) ou atualização de nota, o que é permitido na demo.
         cursor.execute("""REPLACE INTO Notas (id_aluno, id_disciplina, tipo_avaliacao, valor_nota) VALUES (?, ?, ?, ?)""", (id_aluno, id_disciplina, tipo_avaliacao, valor_nota))
         conn.commit()
         st.success(f"✅ Nota {tipo_avaliacao} ({valor_nota:.1f}) inserida/atualizada.")
     except Exception as e:
         st.error(f"❌ Erro ao inserir nota: {e}")
     finally: conn.close()
+
 
 def obter_frequencia_por_aula(id_disciplina, data_aula):
     conn = sqlite3.connect(DB_NAME)
@@ -175,6 +180,7 @@ def obter_frequencia_por_aula(id_disciplina, data_aula):
     df['Opção'] = df['id_frequencia'].astype(str) + ' - ' + df['Aluno']
     return df, id_aula
 
+
 def atualizar_status_frequencia(id_frequencia, novo_status):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -189,7 +195,8 @@ def atualizar_status_frequencia(id_frequencia, novo_status):
     finally:
         conn.close()
 
-def gerar_relatorio_final_completo(): # Nome da função definido corretamente aqui
+
+def gerar_relatorio_final_completo(): 
     try:
         conn = sqlite3.connect(DB_NAME)
         query_sql_completa = """
@@ -259,35 +266,40 @@ def gerar_relatorio_final_completo(): # Nome da função definido corretamente a
 # =========================================================================
 
 def main():
-    # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
+    # 1. CONFIGURAÇÃO DA PÁGINA
     st.set_page_config(layout="wide") 
-
-    # 2. Exibe o título e o separador (antes do login)
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
 
-    # =========================================================================
-    # 3. AUTENTICAÇÃO HARDCODED (APENAS PARA TESTE RÁPIDO)
-    # =========================================================================
-    # ESTAS CREDENCIAIS SÃO FIXAS: professor_marcos / 20710350Mar#
-    usuario_correto = "professor_marcos" 
-    SENHA_CORRETA = "20710350Mar#" 
-        
+    # 3. AUTENTICAÇÃO HARDCODED (Múltiplos Usuários de Demonstração)
+    USUARIOS_DEMO = {
+        "demo_aluno_a": "Senha123", 
+        "demo_coord_b": "Senha123", 
+        "demonstracao": "Teste2026" 
+    }
+    
     st.sidebar.title("Login")
-
-    # Campo de Usuário (Rótulo é "Usuário")
     username = st.sidebar.text_input("Usuário")
-
-    # Campo de Senha (Rótulo é "Senha", e o tipo é OBRIGATORIAMENTE "password")
     password = st.sidebar.text_input("Senha", type="password") 
 
+    # Inicializa ou recupera o estado de login ANTES da verificação.
+    if 'user_login_name' not in st.session_state:
+        st.session_state['user_login_name'] = None 
+
     # =========================================================================
-    # 4. PORTÃO DE LOGIN
+    # 4. PORTÃO DE LOGIN MÚLTIPLO E ARMAZENAMENTO DA SESSÃO 
     # =========================================================================
-    if username == usuario_correto and password == SENHA_CORRETA:
-        st.sidebar.success("Login bem-sucedido!")
+    
+    # Verifica se o usuário e senha correspondem a alguma entrada no dicionário
+    if username in USUARIOS_DEMO and password == USUARIOS_DEMO[username]:
+        # 🟢 Login Bem-Sucedido
+        st.session_state.user_login_name = username
+        usuario_logado = st.session_state.user_login_name 
+        st.sidebar.success(f"Login bem-sucedido! Bem-vindo, {usuario_logado}.")
         
-        # --- O APLICATIVO REAL INICIA AQUI (DEPOIS DO LOGIN) ---
+        # ** APLICAÇÃO DA LIMITAÇÃO DE USO (AVISO LATERAL) **
+        if usuario_logado == "demonstracao":
+            st.sidebar.warning("⚠️ **Aviso Demo:** A modificação de dados existentes está bloqueada.")
         
         # 1. INICIALIZAÇÃO DO DB e Persistência
         aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
@@ -296,8 +308,10 @@ def main():
         aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
         disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
-        # 1. Lançamento de Aulas e Frequência
-        st.header("🗓️ 1. Lançamento de Aulas")
+        # -------------------------------------------------------------------------
+        # 1. Lançamento de Aulas e Frequência (CRIAÇÃO LIBERADA)
+        # -------------------------------------------------------------------------
+        st.header("🗓️ 1. Lançamento de Aulas (Liberado)")
         with st.form("form_aulas"):
             col1, col2, col3 = st.columns(3)
             
@@ -310,12 +324,14 @@ def main():
             submitted_aula = st.form_submit_button("Lançar Aula e Marcar Todos Presentes")
             
             if submitted_aula:
+                # Ação permitida para a conta demo (Criação de novos dados)
                 lancar_aula_e_frequencia(id_disciplina, data_input.strftime("%Y-%m-%d"), conteudo)
                 st.rerun() 
 
-
-        # 2. Painel de Chamada (Ajuste de Faltas)
-        st.header("📋 2. Ajuste de Faltas Pontuais")
+        # -------------------------------------------------------------------------
+        # 2. Painel de Chamada (Ajuste de Faltas - MODIFICAÇÃO BLOQUEADA)
+        # -------------------------------------------------------------------------
+        st.header("📋 2. Ajuste de Faltas Pontuais (Modificação Bloqueada)")
         
         col1, col2 = st.columns(2)
         disciplina_chamada_nome = col1.selectbox('Disciplina (Ajuste)', options=list(disciplina_map_nome.keys()), key="sel_disc_chamada")
@@ -345,25 +361,34 @@ def main():
                 st.subheader("Alterar Status (Falta/Presença)")
                 
                 df_chamada = st.session_state['df_chamada']
-                
                 opcoes_ajuste = {row['Aluno']: row['id_frequencia'] for index, row in df_chamada.iterrows()}
-                
                 col_aluno, col_status = st.columns([2, 1])
 
                 aluno_ajuste = col_aluno.selectbox('Aluno para Ajuste', options=list(opcoes_ajuste.keys()))
                 novo_status_label = col_status.selectbox('Novo Status', options=['PRESENTE', 'FALTA'])
 
+                # --- BLOQUEIO DA MODIFICAÇÃO PARA DEMONSTRACAO ---
                 if st.button("Salvar Alteração de Frequência"):
-                    id_frequencia_registro = opcoes_ajuste[aluno_ajuste]
-                    novo_status = 1 if novo_status_label == 'PRESENTE' else 0
                     
-                    atualizar_status_frequencia(id_frequencia_registro, novo_status)
-                    st.info("Atualização salva. Recarregue a chamada para confirmar.")
-                    st.rerun()
+                    if usuario_logado == "demonstracao":
+                        st.error("❌ A alteração de frequência está bloqueada na versão de demonstração (modifica dados existentes).")
+                        
+                    else:
+                        # Código de execução para usuários válidos
+                        id_frequencia_registro = opcoes_ajuste[aluno_ajuste]
+                        novo_status = 1 if novo_status_label == 'PRESENTE' else 0
+                        
+                        atualizar_status_frequencia(id_frequencia_registro, novo_status)
+                        st.info("✅ Atualização salva. Recarregue a chamada para confirmar.")
+                        st.rerun()
 
-
-        # 3. Lançamento de Notas
-        st.header("🖊️ 3. Lançamento de Notas")
+                if usuario_logado == "demonstracao":
+                    st.markdown("⚠️ **Aviso:** Este botão está desabilitado para a conta de demonstração.")
+        
+        # -------------------------------------------------------------------------
+        # 3. Lançamento de Notas (CRIAÇÃO LIBERADA)
+        # -------------------------------------------------------------------------
+        st.header("🖊️ 3. Lançamento de Notas (Liberado)")
         with st.form("form_notas"):
             col1, col2, col3, col4 = st.columns(4)
             
@@ -378,26 +403,24 @@ def main():
             submitted_nota = st.form_submit_button("Inserir/Atualizar Nota")
 
             if submitted_nota:
+                # Ação permitida para a conta demo (Criação/Substituição de novos dados)
                 inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota)
                 st.rerun()
 
-
         st.markdown("---")
 
-        # =========================================================================
-        # 4. Relatório Consolidado
-        # =========================================================================
+        # -------------------------------------------------------------------------
+        # 4. Relatório Consolidado (VISUALIZAÇÃO LIBERADA)
+        # -------------------------------------------------------------------------
         st.header("📊 Relatório Consolidado")
         
-        # 1. Chama a função para gerar o relatório e retorna o DataFrame
         df_relatorio_final = gerar_relatorio_final_completo()
         
         if df_relatorio_final is not None and not df_relatorio_final.empty:
             st.markdown("---")
             col_csv, col_spacer = st.columns([1, 4]) 
             
-            # 2. BOTÃO GERAR CONTEÚDO (CSV)
-            # Transforma o DataFrame em CSV para download
+            # BOTÃO GERAR CONTEÚDO (CSV) - Visualização/Exportação sempre liberada
             csv_data = df_relatorio_final.to_csv(index=False).encode('utf-8')
             col_csv.download_button(
                 label="⬇️ Gerar Conteúdo (CSV)",
@@ -406,17 +429,20 @@ def main():
                 mime='text/csv',
                 key='download_csv'
             )
-            # O código do botão de impressão foi TOTALMENTE REMOVIDO.
             
-    elif username == "" and password == "":
-        # Mensagem inicial para guiar o usuário (apenas se os campos estiverem vazios)
-        st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
-        return 
-        
+    # -------------------------------------------------------------------------
+    # 5. LÓGICA DE FALHA DE LOGIN
+    # -------------------------------------------------------------------------
     else:
-        # Mensagem de erro (apenas se houver tentativa de login inválida)
-        st.sidebar.error("Usuário ou senha incorretos.")
-        return # Impede que o restante do app seja carregado
+        # Se o login falhar
+        if username or password: # Se o usuário tentou digitar algo
+            st.sidebar.error("Usuário ou senha incorretos.")
+        
+        # Mensagem inicial para guiar o usuário
+        st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
+        return # ❌ PARAR AQUI (Não executa o restante do app)
+        
+    st.markdown("---") 
 
 if __name__ == "__main__":
     main()
