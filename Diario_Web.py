@@ -256,27 +256,22 @@ def gerar_relatorio_final_completo():
 # =========================================================================
 
 def main():
-    # .streamlit/secrets.toml
-app_user="professor_marcos"
-app_password="20710350Mar#"
-	
-	# 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
+    # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
     st.set_page_config(layout="wide") 
 
     # 2. Exibe o título e o separador (antes do login)
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
 
-    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS (Removido o ERRO FATAL)
-    
+    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
     # Tentamos ler as credenciais. Se o arquivo secrets.toml não existir,
-    # definimos valores vazios (isso fará o login falhar até a configuração).
+    # definimos valores vazios para evitar um KeyError.
     try:
-        SENHA_CORRETA = st.secrets["20710350Mar#"]
-        usuario_correto = st.secrets["professor_marcos"]
+        # As chaves DEVEM ser o nome da variável no secrets.toml: "app_user" e "app_password"
+        SENHA_CORRETA = st.secrets["app_password"]
+        usuario_correto = st.secrets["app_user"]
     except KeyError:
-        # Se os segredos não existirem, usamos strings vazias.
-        # Isso faz com que o aplicativo mostre o prompt de login em loop.
+        # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
         SENHA_CORRETA = ""
         usuario_correto = ""
         
@@ -297,8 +292,6 @@ app_password="20710350Mar#"
         aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
         disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
-        # --- Layout da Interface ---
-        
         # 1. Lançamento de Aulas e Frequência
         st.header("🗓️ 1. Lançamento de Aulas")
         with st.form("form_aulas"):
@@ -314,7 +307,7 @@ app_password="20710350Mar#"
             
             if submitted_aula:
                 lancar_aula_e_frequencia(id_disciplina, data_input.strftime("%Y-%m-%d"), conteudo)
-                st.rerun() # Recarrega a página para atualizar o relatório
+                st.rerun() 
 
 
         # 2. Painel de Chamada (Ajuste de Faltas)
@@ -335,7 +328,7 @@ app_password="20710350Mar#"
                 st.session_state['msg_chamada'] = f"✅ Chamada Carregada (Aula ID: {id_aula_ou_erro})"
             else:
                 st.session_state['df_chamada'] = None
-                st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula_ou_erro}" # id_aula_ou_erro é a mensagem de erro
+                st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula_ou_erro}" 
 
         # Exibe a tabela carregada
         if 'msg_chamada' in st.session_state:
