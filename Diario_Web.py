@@ -256,6 +256,29 @@ def gerar_relatorio_final_completo():
 # =========================================================================
 
 def main():
+    # ... (código existente)
+    
+    # Adicionar a Proteção aqui:
+    SENHA_CORRETA = st.secrets["app_password"] # Recomendado para segurança
+    usuario_correto = st.secrets["app_user"]
+    
+    st.sidebar.title("Login")
+    username = st.sidebar.text_input("Usuário")
+    password = st.sidebar.text_input("Senha", type="password")
+
+    if username == usuario_correto and password == SENHA_CORRETA:
+        st.sidebar.success("Login bem-sucedido!")
+        # O resto da sua aplicação (layout, headers, formulários) vai AQUI
+        
+        # ... (Layout da Interface)
+        st.title("👨‍🏫 Diário de Classe Interativo")
+        # ... (Resto do código main)
+        
+    elif username or password:
+        st.sidebar.error("Usuário ou senha incorretos.")
+        return # Impede que o resto do app seja carregado
+    
+    # ... (Resto do código main continua aqui SE o login for bem-sucedido)
     st.set_page_config(layout="wide")
     st.title("👨‍🏫 Diário de Classe Interativo")
     st.markdown("---")
