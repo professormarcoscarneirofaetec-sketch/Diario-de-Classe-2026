@@ -276,8 +276,8 @@ def main():
         usuario_correto = ""
         
     st.sidebar.title("Login")
-    username = st.sidebar.text_input("Usuário")
-    password = st.sidebar.text_input("Senha", type="password")
+    username = st.sidebar.text_input("marcos")
+    password = st.sidebar.text_input("Senha", type="20710350Mar")
 
     # 4. PORTÃO DE LOGIN
     if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
