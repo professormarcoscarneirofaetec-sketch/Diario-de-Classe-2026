@@ -1,4 +1,4 @@
-# Diario_Web.py (Código FINAL e Corrigido para Streamlit com Múltiplos Logins e Exportação)
+# Diario_Web.py (Código FINAL, Corrigido e Verificado)
 
 import streamlit as st
 import sqlite3
