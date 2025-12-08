@@ -259,6 +259,10 @@ def gerar_relatorio_final_completo():
 # FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
 # =========================================================================
 
+# =========================================================================
+# FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
+# =========================================================================
+
 def main():
     # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
     st.set_page_config(layout="wide") 
@@ -269,13 +273,13 @@ def main():
 
     # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
     # Tentamos ler as credenciais. Se o arquivo secrets.toml não existir,
-    # definimos valores vazios para evitar um KeyError e bloquear o acesso.
+    # definimos valores vazios para evitar um KeyError.
     try:
-        # As chaves DEVEM ser o nome da variável no secrets.toml
-        SENHA_CORRETA = st.secrets["app_password"]
-        usuario_correto = st.secrets["app_user"]
+        # As chaves DEVEM ser o nome da variável no secrets.toml: "app_user" e "app_password"
+        SENHA_CORRETA = st.secrets["20710350Mar#"]
+        usuario_correto = st.secrets["marcos_carneiro"]
     except KeyError:
-        # Se os segredos não existirem no Streamlit Cloud
+        # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
         SENHA_CORRETA = ""
         usuario_correto = ""
         
