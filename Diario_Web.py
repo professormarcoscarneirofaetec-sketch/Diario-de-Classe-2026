@@ -1,4 +1,4 @@
-# Diario_Web.py (Código FINAL, Corrigido e Verificado)
+# Diario_Web.py (Código FINAL com Separação de Privilégios ADMIN/DEMO)
 
 import streamlit as st
 import sqlite3
@@ -13,9 +13,8 @@ CORTE_FREQUENCIA = 75
 NOTA_APROVACAO_DIRETA = 7.0
 NOTA_MINIMA_P3 = 4.0
 NOTA_MINIMA_FINAL = 5.0
-DB_NAME = 'diario_de_classe.db' # O DB será criado no mesmo diretório
+DB_NAME = 'diario_de_classe.db' 
 
-# Dados de exemplo usados APENAS para popular as tabelas Alunos e Disciplinas
 diario_de_classe = {
     "Alice": {}, 
     "Bruno": {},
@@ -23,7 +22,7 @@ diario_de_classe = {
 }
 
 # =========================================================================
-# FUNÇÕES DE LÓGICA E BD
+# FUNÇÕES DE LÓGICA E BD (Sem alterações nesta seção)
 # =========================================================================
 
 @st.cache_resource
@@ -31,7 +30,6 @@ def criar_e_popular_sqlite():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA (Importante para o reset da demo)
     cursor.execute("DROP TABLE IF EXISTS Frequencia")
     cursor.execute("DROP TABLE IF EXISTS Notas")
     cursor.execute("DROP TABLE IF EXISTS Aulas")
@@ -40,7 +38,6 @@ def criar_e_popular_sqlite():
     cursor.execute("DROP TABLE IF EXISTS Turmas")
     conn.commit()
     
-    # 2. CRIAÇÃO DAS TABELAS
     cursor.execute('''CREATE TABLE Alunos (id_aluno INTEGER PRIMARY KEY, nome TEXT NOT NULL, matricula TEXT UNIQUE NOT NULL);''')
     cursor.execute('''CREATE TABLE Disciplinas (id_disciplina INTEGER PRIMARY KEY, nome_disciplina TEXT UNIQUE NOT NULL);''')
     cursor.execute('''CREATE TABLE Turmas (id_turma INTEGER PRIMARY KEY, nome_turma TEXT NOT NULL, ano_letivo INTEGER NOT NULL);''')
@@ -49,12 +46,10 @@ def criar_e_popular_sqlite():
     cursor.execute('''CREATE TABLE Frequencia (id_frequencia INTEGER PRIMARY KEY, id_aula INTEGER, id_aluno INTEGER, presente BOOLEAN NOT NULL, UNIQUE(id_aula, id_aluno), FOREIGN KEY (id_aula) REFERENCES Aulas(id_aula), FOREIGN KEY (id_aluno) REFERENCES Alunos(id_aluno));''')
     conn.commit()
 
-    # 3. POPULANDO OS DADOS DE CADASTRO (Alunos e Disciplinas)
     aluno_map = {}; disciplina_map = {}; id_turma_padrao = 1
     
     cursor.execute("REPLACE INTO Turmas (id_turma, nome_turma, ano_letivo) VALUES (?, ?, ?)", (id_turma_padrao, "Exemplo 2025/1", 2025))
     
-    # Nova Versão (Exemplo para Educação Básica):
     disciplinas_list = ["Língua Portuguesa", "Matemática", "Ciências", "História", "Geografia", "Artes"]
     for i, disc in enumerate(disciplinas_list): 
         cursor.execute("REPLACE INTO Disciplinas (id_disciplina, nome_disciplina) VALUES (?, ?)", (i+1, disc))
@@ -72,14 +67,12 @@ def criar_e_popular_sqlite():
     conn.commit()
     conn.close()
 
-    # Retorna os mapas necessários para os selectboxes
     return aluno_map, disciplina_map
 
 
 def calcular_media_final(avaliacoes):
     p1_val = avaliacoes.get("P1"); p2_val = avaliacoes.get("P2"); p3_val = avaliacoes.get("P3")
     
-    # Tratamento para garantir que None/NaN sejam 0.0 na média parcial
     p1 = float(p1_val) if pd.notna(p1_val) and p1_val is not None else 0.0
     p2 = float(p2_val) if pd.notna(p2_val) and p2_val is not None else 0.0
     
@@ -113,7 +106,6 @@ def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
         conn.commit()
         id_aula = cursor.lastrowid
         
-        # Garante que a consulta de alunos retorne dados para a inserção de frequência
         cursor.execute("SELECT id_aluno FROM Alunos")
         alunos_ids = [row[0] for row in cursor.fetchall()]
         
@@ -138,7 +130,6 @@ def inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     try:
-        # REPLACE INTO permite inserção (criação) ou atualização de nota, o que é permitido na demo.
         cursor.execute("""REPLACE INTO Notas (id_aluno, id_disciplina, tipo_avaliacao, valor_nota) VALUES (?, ?, ?, ?)""", (id_aluno, id_disciplina, tipo_avaliacao, valor_nota))
         conn.commit()
         st.success(f"✅ Nota {tipo_avaliacao} ({valor_nota:.1f}) inserida/atualizada.")
@@ -218,7 +209,6 @@ def gerar_relatorio_final_completo():
         st.error(f"❌ ERRO FATAL na consulta SQL/Pandas. Verifique a estrutura do DB. Mensagem: {e}")
         return
 
-    # Tratamento para evitar KeyError se a consulta não retornar dados
     if df_relatorio.empty:
         st.info("Nenhum dado de aluno/disciplina encontrado no DB para o relatório. Verifique a inicialização.")
         return None
@@ -228,7 +218,6 @@ def gerar_relatorio_final_completo():
         total_aulas = row['Total_Aulas'] or 0; total_presencas = row['Total_Presencas'] or 0
         frequencia_percentual = (total_presencas / total_aulas * 100) if total_aulas > 0 else 0
         
-        # Corrigindo KeyError ao acessar P1, P2, P3:
         avaliacoes = {"P1": row.get('P1'), "P2": row.get('P2'), "P3": row.get('P3')}
         
         nota_final, situacao_nota, media_parcial = calcular_media_final(avaliacoes)
@@ -257,7 +246,6 @@ def gerar_relatorio_final_completo():
     df_final = pd.DataFrame(resultados_finais)
     st.dataframe(df_final.set_index(["Aluno", "Disciplina"]), use_container_width=True)
     
-    # ✅ RETORNA o DataFrame final para uso nos botões
     return df_final
 
 
@@ -271,45 +259,67 @@ def main():
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
 
-    # 3. AUTENTICAÇÃO HARDCODED (Múltiplos Usuários de Demonstração)
-    USUARIOS_DEMO = {
-        "demo_aluno_a": "Senha123", 
-        "demo_coord_b": "Senha123", 
-        "demonstracao": "Teste2026" 
-    }
+    # 3. AUTENTICAÇÃO HARDCODED (SEPARAÇÃO DE PRIVILÉGIOS)
     
+    # ----------------------------------------
+    # CONTAS COM ACESSO TOTAL (ILIMITADO - O SEU AMBIENTE)
+    ADMIN_USER = "demonstracao" 
+    ADMIN_PASS = "Teste2026"
+    
+    # CONTAS COM ACESSO RESTRITO (LIMITADO - AMBIENTE DO CLIENTE DE VENDAS)
+    USUARIOS_RESTRITOS = {
+        "demo_aluno_a": "Senha123", 
+        "demo_coord_b": "Senha123",
+        "cliente_teste": "Senha1234" 
+    }
+    # ----------------------------------------
+
     st.sidebar.title("Login")
     username = st.sidebar.text_input("Usuário")
     password = st.sidebar.text_input("Senha", type="password") 
 
-    # Inicializa ou recupera o estado de login ANTES da verificação.
+    # Inicializa o estado de login e o novo flag de restrição
     if 'user_login_name' not in st.session_state:
         st.session_state['user_login_name'] = None 
+    if 'is_restricted' not in st.session_state:
+        st.session_state['is_restricted'] = None 
 
     # =========================================================================
     # 4. PORTÃO DE LOGIN MÚLTIPLO E ARMAZENAMENTO DA SESSÃO 
     # =========================================================================
     
-    # Verifica se o usuário e senha correspondem a alguma entrada no dicionário
-    if username in USUARIOS_DEMO and password == USUARIOS_DEMO[username]:
-        # 🟢 Login Bem-Sucedido
+    login_successful = False
+    
+    # 1. TENTA LOGIN ILIMITADO (DONO/ADMIN)
+    if username == ADMIN_USER and password == ADMIN_PASS:
         st.session_state.user_login_name = username
+        st.session_state.is_restricted = False # ILIMITADO
+        login_successful = True
+    
+    # 2. TENTA LOGIN RESTRITO (DEMO)
+    elif username in USUARIOS_RESTRITOS and password == USUARIOS_RESTRITOS[username]:
+        st.session_state.user_login_name = username
+        st.session_state.is_restricted = True # LIMITADO
+        login_successful = True
+    
+    # 3. LÓGICA DE LOGIN BEM-SUCEDIDO
+    if login_successful:
         usuario_logado = st.session_state.user_login_name 
         st.sidebar.success(f"Login bem-sucedido! Bem-vindo, {usuario_logado}.")
         
         # ** APLICAÇÃO DA LIMITAÇÃO DE USO (AVISO LATERAL) **
-        if usuario_logado == "demonstracao":
+        if st.session_state.is_restricted:
             st.sidebar.warning("⚠️ **Aviso Demo:** A modificação de dados existentes está bloqueada.")
+            st.sidebar.info("Apenas a criação e visualização são permitidas.")
         
         # 1. INICIALIZAÇÃO DO DB e Persistência
         aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
         
-        # Inverte os mapas para usar o nome como label e o ID como valor
         aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
         disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
         # -------------------------------------------------------------------------
-        # 1. Lançamento de Aulas e Frequência (CRIAÇÃO LIBERADA)
+        # 1. Lançamento de Aulas e Frequência (CRIAÇÃO LIBERADA PARA TODOS)
         # -------------------------------------------------------------------------
         st.header("🗓️ 1. Lançamento de Aulas (Liberado)")
         with st.form("form_aulas"):
@@ -324,14 +334,13 @@ def main():
             submitted_aula = st.form_submit_button("Lançar Aula e Marcar Todos Presentes")
             
             if submitted_aula:
-                # Ação permitida para a conta demo (Criação de novos dados)
                 lancar_aula_e_frequencia(id_disciplina, data_input.strftime("%Y-%m-%d"), conteudo)
                 st.rerun() 
 
         # -------------------------------------------------------------------------
-        # 2. Painel de Chamada (Ajuste de Faltas - MODIFICAÇÃO BLOQUEADA)
+        # 2. Painel de Chamada (Ajuste de Faltas - BLOQUEIO CONDICIONAL)
         # -------------------------------------------------------------------------
-        st.header("📋 2. Ajuste de Faltas Pontuais (Modificação Bloqueada)")
+        st.header("📋 2. Ajuste de Faltas Pontuais")
         
         col1, col2 = st.columns(2)
         disciplina_chamada_nome = col1.selectbox('Disciplina (Ajuste)', options=list(disciplina_map_nome.keys()), key="sel_disc_chamada")
@@ -350,14 +359,12 @@ def main():
                 st.session_state['df_chamada'] = None
                 st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula_ou_erro}" 
 
-        # Exibe a tabela carregada
         if 'msg_chamada' in st.session_state:
             st.markdown(st.session_state['msg_chamada'])
             if st.session_state['df_chamada'] is not None and not st.session_state['df_chamada'].empty:
                 st.dataframe(st.session_state['df_chamada'][['Aluno', 'Status Atual']], hide_index=True)
                 st.markdown("---")
 
-                # Formulário de Ajuste
                 st.subheader("Alterar Status (Falta/Presença)")
                 
                 df_chamada = st.session_state['df_chamada']
@@ -367,14 +374,14 @@ def main():
                 aluno_ajuste = col_aluno.selectbox('Aluno para Ajuste', options=list(opcoes_ajuste.keys()))
                 novo_status_label = col_status.selectbox('Novo Status', options=['PRESENTE', 'FALTA'])
 
-                # --- BLOQUEIO DA MODIFICAÇÃO PARA DEMONSTRACAO ---
+                # --- BLOQUEIO CONDICIONAL ---
                 if st.button("Salvar Alteração de Frequência"):
                     
-                    if usuario_logado == "demonstracao":
-                        st.error("❌ A alteração de frequência está bloqueada na versão de demonstração (modifica dados existentes).")
+                    if st.session_state.is_restricted: # VERIFICA O NOVO FLAG DE RESTRIÇÃO
+                        st.error("❌ A alteração de frequência está bloqueada nesta conta de demonstração (modifica dados existentes).")
                         
                     else:
-                        # Código de execução para usuários válidos
+                        # Código de execução para a conta ADMIN (ILIMITADA)
                         id_frequencia_registro = opcoes_ajuste[aluno_ajuste]
                         novo_status = 1 if novo_status_label == 'PRESENTE' else 0
                         
@@ -382,11 +389,11 @@ def main():
                         st.info("✅ Atualização salva. Recarregue a chamada para confirmar.")
                         st.rerun()
 
-                if usuario_logado == "demonstracao":
-                    st.markdown("⚠️ **Aviso:** Este botão está desabilitado para a conta de demonstração.")
+                if st.session_state.is_restricted:
+                    st.markdown("⚠️ **Aviso:** Este botão está desabilitado para contas de demonstração.")
         
         # -------------------------------------------------------------------------
-        # 3. Lançamento de Notas (CRIAÇÃO LIBERADA)
+        # 3. Lançamento de Notas (CRIAÇÃO LIBERADA PARA TODOS)
         # -------------------------------------------------------------------------
         st.header("🖊️ 3. Lançamento de Notas (Liberado)")
         with st.form("form_notas"):
@@ -403,14 +410,13 @@ def main():
             submitted_nota = st.form_submit_button("Inserir/Atualizar Nota")
 
             if submitted_nota:
-                # Ação permitida para a conta demo (Criação/Substituição de novos dados)
                 inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota)
                 st.rerun()
 
         st.markdown("---")
 
         # -------------------------------------------------------------------------
-        # 4. Relatório Consolidado (VISUALIZAÇÃO LIBERADA)
+        # 4. Relatório Consolidado (VISUALIZAÇÃO LIBERADA PARA TODOS)
         # -------------------------------------------------------------------------
         st.header("📊 Relatório Consolidado")
         
@@ -420,7 +426,6 @@ def main():
             st.markdown("---")
             col_csv, col_spacer = st.columns([1, 4]) 
             
-            # BOTÃO GERAR CONTEÚDO (CSV) - Visualização/Exportação sempre liberada
             csv_data = df_relatorio_final.to_csv(index=False).encode('utf-8')
             col_csv.download_button(
                 label="⬇️ Gerar Conteúdo (CSV)",
@@ -435,12 +440,11 @@ def main():
     # -------------------------------------------------------------------------
     else:
         # Se o login falhar
-        if username or password: # Se o usuário tentou digitar algo
+        if username or password: 
             st.sidebar.error("Usuário ou senha incorretos.")
         
-        # Mensagem inicial para guiar o usuário
         st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
-        return # ❌ PARAR AQUI (Não executa o restante do app)
+        return 
         
     st.markdown("---") 
 
