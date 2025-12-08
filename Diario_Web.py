@@ -266,25 +266,21 @@ def main():
 
     # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
     # Tentamos ler as credenciais.
+    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
+    # Tentamos ler as credenciais.
     try:
-        # As chaves DEVEM ser "app_password" e "app_user" lidas do secrets.toml
-        SENHA_CORRETA = st.secrets app_password="20710350Mar#"
-        usuario_correto = st.secrets app_user="marcos"
-    except KeyError:
-        # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
-        SENHA_CORRETA = ""
-        usuario_correto = ""
+        # ✅ CORRETO: A chave é SÓ O NOME da variável no secrets.toml
         
-    st.sidebar.title("Login")
-    # CORREÇÃO: Removendo o valor do usuário do campo de entrada (deve ser vazio)
-    username = st.sidebar.text_input("Usuário")
-    # CORREÇÃO: Usando type="password" (o Streamlit só aceita 'default' ou 'password')
-    password = st.sidebar.text_input("Senha", type="password") 
+		st.sidebar.title("Login")
+username = st.sidebar.text_input("Usuário")
+password = st.sidebar.text_input("20710350Mar#", type="marcos") 
 
-    # 4. PORTÃO DE LOGIN
-    if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
-        st.sidebar.success("Login bem-sucedido!")
-        
+# 4. PORTÃO DE LOGIN (O restante do aplicativo deve estar aqui)
+if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
+    st.sidebar.success("Login bem-sucedido!")
+    # ... O resto do Diário de Classe vem aqui.
+			
+		     
         # --- APLICATIVO REAL INICIA AQUI (INDENTADO) ---
         
         # 1. INICIALIZAÇÃO DO DB e Persistência
