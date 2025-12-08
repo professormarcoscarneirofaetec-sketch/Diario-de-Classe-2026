@@ -410,15 +410,19 @@ def main():
             
             # 3. BOTÃO IMPRIMIR RELATÓRIO
             # (Usa um botão genérico que exige que o usuário imprima a página inteira)
-            col_print.markdown(
-                f"""
-                <a href="javascript:window.print();">
-                    <button style="border: none; padding: 10px 15px; background-color: #f0f2f6; color: black; border-radius: 5px; cursor: pointer;">
-                        🖨️ Imprimir Relatório (Página Atual)
-                    </button>
-                </a>
-                """,
-                unsafe_allow_html=True
+            # Seu código antigo com problema no link <a>:
+# 3. BOTÃO IMPRIMIR RELATÓRIO
+# (Usa um botão genérico que exige que o usuário imprima a página inteira)
+col_print.markdown(
+    f"""
+    <a href="javascript:window.print();">
+        <button style="border: none; padding: 10px 15px; background-color: #f0f2f6; color: black; border-radius: 5px; cursor: pointer;">
+            🖨️ Imprimir Relatório (Página Atual)
+        </button>
+    </a>
+    """,
+    unsafe_allow_html=True
+)
             )
         
     elif username or password:
