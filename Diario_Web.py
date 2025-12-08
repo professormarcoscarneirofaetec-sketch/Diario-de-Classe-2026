@@ -149,7 +149,7 @@ def obter_frequencia_por_aula(id_disciplina, data_aula):
     id_turma_padrao = 1
     cursor.execute("""
         SELECT id_aula FROM Aulas WHERE id_turma = ? AND id_disciplina = ? AND data_aula = ?
-    """, (id_turma_padrao, id_disciplina, data_aula)) # Fechamento da consulta SQL
+    """, (id_turma_padrao, id_disciplina, data_aula)) 
     result = cursor.fetchone()
     
     if not result:
@@ -276,8 +276,10 @@ def main():
         usuario_correto = ""
         
     st.sidebar.title("Login")
-    username = st.sidebar.text_input("marcos")
-    password = st.sidebar.text_input("Senha", type="20710350Mar")
+    # CORREÇÃO: Removendo o valor do usuário do campo de entrada (deve ser vazio)
+    username = st.sidebar.text_input("Usuário")
+    # CORREÇÃO: Usando type="password" (o Streamlit só aceita 'default' ou 'password')
+    password = st.sidebar.text_input("Senha", type="password") 
 
     # 4. PORTÃO DE LOGIN
     if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
