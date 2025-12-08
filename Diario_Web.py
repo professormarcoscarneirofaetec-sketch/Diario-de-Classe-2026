@@ -258,10 +258,6 @@ def gerar_relatorio_final_completo(): # Nome da função definido corretamente a
 # FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
 # =========================================================================
 
-# =========================================================================
-# FUNÇÃO PRINCIPAL DO STREAMLIT (Interface) - VERSÃO FINAL
-# =========================================================================
-
 def main():
     # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
     st.set_page_config(layout="wide") 
@@ -391,26 +387,6 @@ def main():
         # =========================================================================
         # 4. Relatório Consolidado
         # =========================================================================
-        # =========================================================================
-        # 4. Relatório Consolidado
-        # =========================================================================
-       # =========================================================================
-        # 4. Relatório Consolidado
-        # =========================================================================
-        st.header("📊 Relatório Consolidado")
-        
-        # 1. Chama a função para gerar o relatório e retorna o DataFrame
-        df_relatorio_final = gerar_relatorio_final_completo()
-        
-        if df_relatorio_final is not None and not df_relatorio_final.empty:
-            
-			# ... (início da função main)
-
-        st.markdown("---")
-
-        # =========================================================================
-        # 4. Relatório Consolidado
-        # =========================================================================
         st.header("📊 Relatório Consolidado")
         
         # 1. Chama a função para gerar o relatório e retorna o DataFrame
@@ -418,7 +394,6 @@ def main():
         
         if df_relatorio_final is not None and not df_relatorio_final.empty:
             st.markdown("---")
-            # A coluna col_print não é mais necessária, apenas a col_csv e o restante do espaço.
             col_csv, col_spacer = st.columns([1, 4]) 
             
             # 2. BOTÃO GERAR CONTEÚDO (CSV)
@@ -431,19 +406,8 @@ def main():
                 mime='text/csv',
                 key='download_csv'
             )
-            # O código de impressão (col_print.button) foi totalmente removido daqui.
-
-# ... (restante da função main)
-            if col_print.button("🖨️ Imprimir Relatório (Página Atual)"):
-                st.components.v1.html(
-                    """
-                    <script>
-                        window.print();
-                    </script>
-                    """,
-                    # height e width definidos como 0 para ser invisível
-                    height=0, width=0
-                )
+            # O código do botão de impressão foi TOTALMENTE REMOVIDO.
+            
     elif username == "" and password == "":
         # Mensagem inicial para guiar o usuário (apenas se os campos estiverem vazios)
         st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
