@@ -1,4 +1,4 @@
-# Diario_Web.py (Código Final Corrigido para Streamlit com Login)
+# Diario_Web.py (Código Final Corrigido para Streamlit com Login e Exportação)
 
 import streamlit as st
 import sqlite3
@@ -215,7 +215,7 @@ def gerar_relatorio_final_completo(): # Nome da função definido corretamente a
     # Tratamento para evitar KeyError se a consulta não retornar dados
     if df_relatorio.empty:
         st.info("Nenhum dado de aluno/disciplina encontrado no DB para o relatório. Verifique a inicialização.")
-        return
+        return None
 
     resultados_finais = []
     for index, row in df_relatorio.iterrows():
@@ -250,6 +250,9 @@ def gerar_relatorio_final_completo(): # Nome da função definido corretamente a
     st.markdown("### Relatório Final Consolidado")
     df_final = pd.DataFrame(resultados_finais)
     st.dataframe(df_final.set_index(["Aluno", "Disciplina"]), use_container_width=True)
+    
+    # ✅ RETORNA o DataFrame final para uso nos botões
+    return df_final
 
 
 # =========================================================================
@@ -292,7 +295,7 @@ def main():
         
         # Inverte os mapas para usar o nome como label e o ID como valor
         aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
-        disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()} # Corrigido: Removida a atribuição dupla
+        disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
         # 1. Lançamento de Aulas e Frequência
         st.header("🗓️ 1. Lançamento de Aulas")
@@ -382,9 +385,41 @@ def main():
 
         st.markdown("---")
 
-        # 4. Relatório Consolidado (Sempre no final)
+        # =========================================================================
+        # 4. Relatório Consolidado
+        # =========================================================================
         st.header("📊 Relatório Consolidado")
-        gerar_relatorio_final_completo() # Chama a função com o nome correto
+        
+        # 1. Chama a função para gerar o relatório e retorna o DataFrame
+        df_relatorio_final = gerar_relatorio_final_completo()
+        
+        if df_relatorio_final is not None and not df_relatorio_final.empty:
+            st.markdown("---")
+            col_csv, col_print = st.columns([1, 4])
+            
+            # 2. BOTÃO GERAR CONTEÚDO (CSV)
+            # Transforma o DataFrame em CSV para download
+            csv_data = df_relatorio_final.to_csv(index=False).encode('utf-8')
+            col_csv.download_button(
+                label="⬇️ Gerar Conteúdo (CSV)",
+                data=csv_data,
+                file_name=f'Relatorio_Diario_Classe_{date.today()}.csv',
+                mime='text/csv',
+                key='download_csv'
+            )
+            
+            # 3. BOTÃO IMPRIMIR RELATÓRIO
+            # (Usa um botão genérico que exige que o usuário imprima a página inteira)
+            col_print.markdown(
+                f"""
+                <a href="javascript:window.print();">
+                    <button style="border: none; padding: 10px 15px; background-color: #f0f2f6; color: black; border-radius: 5px; cursor: pointer;">
+                        🖨️ Imprimir Relatório (Página Atual)
+                    </button>
+                </a>
+                """,
+                unsafe_allow_html=True
+            )
         
     elif username or password:
         st.sidebar.error("Usuário ou senha incorretos.")
