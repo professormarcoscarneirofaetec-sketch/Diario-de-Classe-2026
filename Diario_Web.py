@@ -256,142 +256,138 @@ def gerar_relatorio_final_completo():
 # =========================================================================
 
 def main():
-    # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
-    st.set_page_config(layout="wide") 
+    # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
+    st.set_page_config(layout="wide") 
 
-    # 2. Exibe o título e o separador (antes do login)
-    st.title("👨‍🏫 Diário de Classe Interativo") 
-    st.markdown("---") 
+    # 2. Exibe o título e o separador (antes do login)
+    st.title("👨‍🏫 Diário de Classe Interativo") 
+    st.markdown("---") 
 
-    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
-    # Tentamos ler as credenciais. Se o arquivo secrets.toml não existir,
-    # definimos valores vazios para evitar um KeyError.
-    try:
-        # As chaves DEVEM ser o nome da variável no secrets.toml: "app_user" e "app_password"
-        try:
-    # ❌ ERRO: Usando o VALOR da senha/usuário como CHAVE.
-    SENHA_CORRETA = st.secrets["20710350Mar#"] 
-    usuario_correto = st.secrets["marcos"] 
-except KeyError:
-    # ...
-        # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
-        SENHA_CORRETA = ""
-        usuario_correto = ""
-        
-    st.sidebar.title("Login")
-    username = st.sidebar.text_input("Usuário")
-    password = st.sidebar.text_input("Senha", type="password")
+    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
+    # Tentamos ler as credenciais.
+    try:
+        # 🔑 CORREÇÃO: As chaves DEVEM ser "app_password" e "app_user"
+        SENHA_CORRETA = st.secrets["app_password"]
+        usuario_correto = st.secrets["app_user"]
+    except KeyError:
+        # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
+        SENHA_CORRETA = ""
+        usuario_correto = ""
+        
+    st.sidebar.title("Login")
+    username = st.sidebar.text_input("Usuário")
+    password = st.sidebar.text_input("Senha", type="password")
 
-    # 4. PORTÃO DE LOGIN
-    if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
-        st.sidebar.success("Login bem-sucedido!")
-        
-        # --- APLICATIVO REAL INICIA AQUI (INDENTADO) ---
-        
-        # 1. INICIALIZAÇÃO DO DB e Persistência
-        aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
-        
-        # Inverte os mapas para usar o nome como label e o ID como valor
-        aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
-        disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
+    # 4. PORTÃO DE LOGIN
+    if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
+        st.sidebar.success("Login bem-sucedido!")
+        
+        # --- APLICATIVO REAL INICIA AQUI (INDENTADO) ---
+        
+        # 1. INICIALIZAÇÃO DO DB e Persistência
+        aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
+        
+        # Inverte os mapas para usar o nome como label e o ID como valor
+        aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
+        disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
-        # 1. Lançamento de Aulas e Frequência
-        st.header("🗓️ 1. Lançamento de Aulas")
-        with st.form("form_aulas"):
-            col1, col2, col3 = st.columns(3)
-            
-            disciplina_aula_nome = col1.selectbox('Disciplina', options=list(disciplina_map_nome.keys()))
-            data_input = col2.date_input('Data', value=date.today())
-            conteudo = col3.text_input('Conteúdo da Aula')
-            
-            id_disciplina = disciplina_map_nome.get(disciplina_aula_nome)
+        # 1. Lançamento de Aulas e Frequência
+        st.header("🗓️ 1. Lançamento de Aulas")
+        with st.form("form_aulas"):
+            col1, col2, col3 = st.columns(3)
+            
+            disciplina_aula_nome = col1.selectbox('Disciplina', options=list(disciplina_map_nome.keys()))
+            data_input = col2.date_input('Data', value=date.today())
+            conteudo = col3.text_input('Conteúdo da Aula')
+            
+            id_disciplina = disciplina_map_nome.get(disciplina_aula_nome)
 
-            submitted_aula = st.form_submit_button("Lançar Aula e Marcar Todos Presentes")
-            
-            if submitted_aula:
-                lancar_aula_e_frequencia(id_disciplina, data_input.strftime("%Y-%m-%d"), conteudo)
-                st.rerun() 
+            submitted_aula = st.form_submit_button("Lançar Aula e Marcar Todos Presentes")
+            
+            if submitted_aula:
+                lancar_aula_e_frequencia(id_disciplina, data_input.strftime("%Y-%m-%d"), conteudo)
+                st.rerun() 
 
 
-        # 2. Painel de Chamada (Ajuste de Faltas)
-        st.header("📋 2. Ajuste de Faltas Pontuais")
-        
-        col1, col2 = st.columns(2)
-        disciplina_chamada_nome = col1.selectbox('Disciplina (Ajuste)', options=list(disciplina_map_nome.keys()), key="sel_disc_chamada")
-        data_consulta = col2.date_input('Data da Aula (Ajuste)', value=date.today(), key="data_chamada")
-        
-        id_disciplina_chamada = disciplina_map_nome.get(disciplina_chamada_nome)
-        
-        if st.button("Carregar Chamada da Aula"):
-            df_frequencia_atual, id_aula_ou_erro = obter_frequencia_por_aula(id_disciplina_chamada, data_consulta.strftime("%Y-%m-%d"))
-            
-            if isinstance(df_frequencia_atual, pd.DataFrame):
-                st.session_state['df_chamada'] = df_frequencia_atual
-                st.session_state['id_aula'] = id_aula_ou_erro
-                st.session_state['msg_chamada'] = f"✅ Chamada Carregada (Aula ID: {id_aula_ou_erro})"
-            else:
-                st.session_state['df_chamada'] = None
-                st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula_ou_erro}" 
+        # 2. Painel de Chamada (Ajuste de Faltas)
+        st.header("📋 2. Ajuste de Faltas Pontuais")
+        
+        col1, col2 = st.columns(2)
+        disciplina_chamada_nome = col1.selectbox('Disciplina (Ajuste)', options=list(disciplina_map_nome.keys()), key="sel_disc_chamada")
+        data_consulta = col2.date_input('Data da Aula (Ajuste)', value=date.today(), key="data_chamada")
+        
+        id_disciplina_chamada = disciplina_map_nome.get(disciplina_chamada_nome)
+        
+        if st.button("Carregar Chamada da Aula"):
+            df_frequencia_atual, id_aula_ou_erro = obter_frequencia_por_aula(id_disciplina_chamada, data_consulta.strftime("%Y-%m-%d"))
+            
+            if isinstance(df_frequencia_atual, pd.DataFrame):
+                st.session_state['df_chamada'] = df_frequencia_atual
+                st.session_state['id_aula'] = id_aula_ou_erro
+                st.session_state['msg_chamada'] = f"✅ Chamada Carregada (Aula ID: {id_aula_ou_erro})"
+            else:
+                st.session_state['df_chamada'] = None
+                st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula_ou_erro}" 
 
-        # Exibe a tabela carregada
-        if 'msg_chamada' in st.session_state:
-            st.markdown(st.session_state['msg_chamada'])
-            if st.session_state['df_chamada'] is not None and not st.session_state['df_chamada'].empty:
-                st.dataframe(st.session_state['df_chamada'][['Aluno', 'Status Atual']], hide_index=True)
-                st.markdown("---")
+        # Exibe a tabela carregada
+        if 'msg_chamada' in st.session_state:
+            st.markdown(st.session_state['msg_chamada'])
+            if st.session_state['df_chamada'] is not None and not st.session_state['df_chamada'].empty:
+                st.dataframe(st.session_state['df_chamada'][['Aluno', 'Status Atual']], hide_index=True)
+                st.markdown("---")
 
-                # Formulário de Ajuste
-                st.subheader("Alterar Status (Falta/Presença)")
-                
-                df_chamada = st.session_state['df_chamada']
-                
-                opcoes_ajuste = {row['Aluno']: row['id_frequencia'] for index, row in df_chamada.iterrows()}
-                
-                col_aluno, col_status = st.columns([2, 1])
+                # Formulário de Ajuste
+                st.subheader("Alterar Status (Falta/Presença)")
+                
+                df_chamada = st.session_state['df_chamada']
+                
+                opcoes_ajuste = {row['Aluno']: row['id_frequencia'] for index, row in df_chamada.iterrows()}
+                
+                col_aluno, col_status = st.columns([2, 1])
 
-                aluno_ajuste = col_aluno.selectbox('Aluno para Ajuste', options=list(opcoes_ajuste.keys()))
-                novo_status_label = col_status.selectbox('Novo Status', options=['PRESENTE', 'FALTA'])
+                aluno_ajuste = col_aluno.selectbox('Aluno para Ajuste', options=list(opcoes_ajuste.keys()))
+                novo_status_label = col_status.selectbox('Novo Status', options=['PRESENTE', 'FALTA'])
 
-                if st.button("Salvar Alteração de Frequência"):
-                    id_frequencia_registro = opcoes_ajuste[aluno_ajuste]
-                    novo_status = 1 if novo_status_label == 'PRESENTE' else 0
-                    
-                    atualizar_status_frequencia(id_frequencia_registro, novo_status)
-                    st.info("Atualização salva. Recarregue a chamada para confirmar.")
-                    st.rerun()
-
-
-        # 3. Lançamento de Notas
-        st.header("🖊️ 3. Lançamento de Notas")
-        with st.form("form_notas"):
-            col1, col2, col3, col4 = st.columns(4)
-            
-            aluno_nome = col1.selectbox('Aluno(a)', options=list(aluno_map_nome.keys()))
-            disciplina_nome = col2.selectbox('Disciplina (Nota)', options=list(disciplina_map_nome.keys()), key="disc_nota")
-            tipo_avaliacao = col3.selectbox('Avaliação', options=['P1', 'P2', 'P3'])
-            valor_nota = col4.number_input('Nota (0-10)', min_value=0.0, max_value=10.0, step=0.5, value=7.0)
-            
-            id_aluno = aluno_map_nome.get(aluno_nome)
-            id_disciplina = disciplina_map_nome.get(disciplina_nome)
-
-            submitted_nota = st.form_submit_button("Inserir/Atualizar Nota")
-
-            if submitted_nota:
-                inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota)
-                st.rerun()
+                if st.button("Salvar Alteração de Frequência"):
+                    id_frequencia_registro = opcoes_ajuste[aluno_ajuste]
+                    novo_status = 1 if novo_status_label == 'PRESENTE' else 0
+                    
+                    atualizar_status_frequencia(id_frequencia_registro, novo_status)
+                    st.info("Atualização salva. Recarregue a chamada para confirmar.")
+                    st.rerun()
 
 
-        st.markdown("---")
+        # 3. Lançamento de Notas
+        st.header("🖊️ 3. Lançamento de Notas")
+        with st.form("form_notas"):
+            col1, col2, col3, col4 = st.columns(4)
+            
+            aluno_nome = col1.selectbox('Aluno(a)', options=list(aluno_map_nome.keys()))
+            disciplina_nome = col2.selectbox('Disciplina (Nota)', options=list(disciplina_map_nome.keys()), key="disc_nota")
+            tipo_avaliacao = col3.selectbox('Avaliação', options=['P1', 'P2', 'P3'])
+            valor_nota = col4.number_input('Nota (0-10)', min_value=0.0, max_value=10.0, step=0.5, value=7.0)
+            
+            id_aluno = aluno_map_nome.get(aluno_nome)
+            id_disciplina = disciplina_map_nome.get(disciplina_nome)
 
-        # 4. Relatório Consolidado (Sempre no final)
-        st.header("📊 Relatório Consolidado")
-        gerar_relatorio_final_completo()
-        
-    elif username or password:
-        st.sidebar.error("Usuário ou senha incorretos.")
-        return # Impede que o restante do app seja carregado
-    
-    else:
-        # Mensagem inicial para guiar o usuário
-        st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
-        return
+            submitted_nota = st.form_submit_button("Inserir/Atualizar Nota")
+
+            if submitted_nota:
+                inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota)
+                st.rerun()
+
+
+        st.markdown("---")
+
+        # 4. Relatório Consolidado (Sempre no final)
+        st.header("📊 Relatório Consolidado")
+        gerar_relatorio_final_completo()
+        
+    elif username or password:
+        st.sidebar.error("Usuário ou senha incorretos.")
+        return # Impede que o restante do app seja carregado
+    
+    else:
+        # Mensagem inicial para guiar o usuário
+        st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
+        return
