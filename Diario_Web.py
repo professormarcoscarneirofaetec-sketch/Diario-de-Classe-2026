@@ -270,17 +270,19 @@ def main():
     st.title("👨‍🏫 Diário de Classe Interativo")
     st.markdown("---")
     
-    # 1. INICIALIZAÇÃO CORRIGIDA (Remove o SyntaxError e corrige o retorno)
-    # Recebe os 3 valores, ignorando o id_turma_padrao com _
-    aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite()
-    
-    # 1. INICIALIZAÇÃO CORRIGIDA (Remove o SyntaxError e corrige o retorno)
-    # Recebe os 3 valores, ignorando o id_turma_padrao com _
+    # 1. INICIALIZAÇÃO E POPULAÇÃO FORÇADA
+    # A função criar_e_popular_sqlite() é chamada aqui para garantir
+    # que o DB seja criado e populado em cada sessão na nuvem.
     aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite() 
     
-    # Inverte os mapas para uso na interface
-    aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
-    disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
+    # Esta linha força uma re-execução da inicialização, se necessário.
+    if 'db_initialized' not in st.session_state:
+        # Chamada extra para garantir que o DB exista antes de qualquer outra consulta
+        criar_e_popular_sqlite()
+        st.session_state['db_initialized'] = True 
+    
+    # Recebe os 3 valores, ignorando o id_turma_padrao com _
+    aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite()
 
     # --- Layout da Interface ---
     
