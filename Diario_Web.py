@@ -264,24 +264,35 @@ def main():
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
 
+    # =========================================================================
     # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
-    # Tentamos ler as credenciais.
-    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
-    # Tentamos ler as credenciais.
+    # =========================================================================
+    # Tentamos ler as credenciais configuradas no arquivo secrets.toml.
     try:
-        # ✅ CORRETO: A chave é SÓ O NOME da variável no secrets.toml
+        # O Python LÊ o valor de "app_password" (que é "20710350Mar#")
+        SENHA_CORRETA = st.secrets["app_password"] 
+        # O Python LÊ o valor de "app_user" (que é "marcos")
+        usuario_correto = st.secrets["app_user"]
+    except KeyError:
+        # Se os segredos não existirem no Streamlit Cloud, o login falha.
+        SENHA_CORRETA = ""
+        usuario_correto = ""
         
-		st.sidebar.title("Login")
-username = st.sidebar.text_input("Usuário")
-password = st.sidebar.text_input("20710350Mar#", type="marcos") 
+    st.sidebar.title("Login")
 
-# 4. PORTÃO DE LOGIN (O restante do aplicativo deve estar aqui)
-if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
-    st.sidebar.success("Login bem-sucedido!")
-    # ... O resto do Diário de Classe vem aqui.
-			
-		     
-        # --- APLICATIVO REAL INICIA AQUI (INDENTADO) ---
+    # Campo de Usuário (Rótulo é "Usuário")
+    username = st.sidebar.text_input("Usuário")
+
+    # Campo de Senha (Rótulo é "Senha", e o tipo é OBRIGATORIAMENTE "password")
+    password = st.sidebar.text_input("Senha", type="password") 
+
+    # =========================================================================
+    # 4. PORTÃO DE LOGIN
+    # =========================================================================
+    if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
+        st.sidebar.success("Login bem-sucedido!")
+        
+        # --- O APLICATIVO REAL INICIA AQUI (DEPOIS DO LOGIN) ---
         
         # 1. INICIALIZAÇÃO DO DB e Persistência
         aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
@@ -380,7 +391,7 @@ if username == usuario_correto and password == SENHA_CORRETA and usuario_correto
 
         # 4. Relatório Consolidado (Sempre no final)
         st.header("📊 Relatório Consolidado")
-        gerar_relatorio_final_completo()
+        generar_relatorio_final_completo()
         
     elif username or password:
         st.sidebar.error("Usuário ou senha incorretos.")
