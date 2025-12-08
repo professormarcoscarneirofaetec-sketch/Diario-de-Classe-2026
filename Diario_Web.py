@@ -1,9 +1,10 @@
-# TOP DO ARQUIVO: Imports
+# Diario_Web.py (Código Final Corrigido para Streamlit)
+
 import streamlit as st
-import pandas as pd
 import sqlite3
-from datetime import date # Necessário para date.today()
-import numpy as np # Necessário para compatibilidade com o ambiente
+import pandas as pd
+import numpy as np
+from datetime import date
 
 # =========================================================================
 # CONSTANTES E DADOS DE EXEMPLO
@@ -14,58 +15,30 @@ NOTA_MINIMA_P3 = 4.0
 NOTA_MINIMA_FINAL = 5.0
 DB_NAME = 'diario_de_classe.db' # O DB será criado no mesmo diretório
 
-# Dicionário de dados de exemplo
+# Dados de exemplo usados APENAS para popular as tabelas Alunos e Disciplinas
 diario_de_classe = {
-    "Alice": {
-        "Português Instrumental": {
-            "presencas": [{"data": "2025-09-01", "conteudo": "Revisão Gramatical", "status": 1}, {"data": "2025-09-08", "conteudo": "Análise de Texto", "status": 1}],
-            "avaliacoes": {"P1": 9.0, "P2": 9.0, "P3": None}
-        },
-        "Inglês Instrumental": {
-            "presencas": [{"data": "2025-09-02", "conteudo": "Skimming", "status": 1}, {"data": "2025-09-09", "conteudo": "Scanning", "status": 1}],
-            "avaliacoes": {"P1": 8.0, "P2": 7.0, "P3": None}
-        }
-    },
-    "Bruno": {
-        "Português Instrumental": {
-            "presencas": [{"data": "2025-09-01", "conteudo": "Revisão Gramatical", "status": 1}, {"data": "2025-09-08", "conteudo": "Análise de Texto", "status": 0}],
-            "avaliacoes": {"P1": 6.0, "P2": 6.0, "P3": 8.0}
-        },
-        "Inglês Instrumental": {
-            "presencas": [{"data": "2025-09-02", "conteudo": "Skimming", "status": 0}, {"data": "2025-09-09", "conteudo": "Scanning", "status": 1}],
-            "avaliacoes": {"P1": 5.0, "P2": 4.0, "P3": 6.0}
-        }
-    },
-    "Carol": {
-        "Português Instrumental": {
-            "presencas": [{"data": "2025-09-01", "conteudo": "Revisão Gramatical", "status": 1}, {"data": "2025-09-08", "conteudo": "Análise de Texto", "status": 1}],
-            "avaliacoes": {"P1": 5.0, "P2": 5.0, "P3": None}
-        },
-        "Inglês Instrumental": {
-            "presencas": [{"data": "2025-09-02", "conteudo": "Skimming", "status": 0}, {"data": "2025-09-09", "conteudo": "Scanning", "status": 0}],
-            "avaliacoes": {"P1": 10.0, "P2": 10.0, "P3": None}
-        }
-    },
+    "Alice": {}, 
+    "Bruno": {},
+    "Carol": {},
 }
 
+
 # =========================================================================
-# FUNÇÕES DE BD E LÓGICA
+# FUNÇÕES DE LÓGICA E BD
 # =========================================================================
 
-# @st.cache_resource garante que o DB/conexão seja criado APENAS UMA VEZ.
 @st.cache_resource
 def criar_e_popular_sqlite():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA (Em um novo deploy)
+    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA
     cursor.execute("DROP TABLE IF EXISTS Frequencia")
     cursor.execute("DROP TABLE IF EXISTS Notas")
     cursor.execute("DROP TABLE IF EXISTS Aulas")
     cursor.execute("DROP TABLE IF EXISTS Alunos")
     cursor.execute("DROP TABLE IF EXISTS Disciplinas")
     cursor.execute("DROP TABLE IF EXISTS Turmas")
-    cursor.execute("DROP TABLE IF EXISTS Notas")
     conn.commit()
     
     # 2. CRIAÇÃO DAS TABELAS
@@ -77,61 +50,57 @@ def criar_e_popular_sqlite():
     cursor.execute('''CREATE TABLE Frequencia (id_frequencia INTEGER PRIMARY KEY, id_aula INTEGER, id_aluno INTEGER, presente BOOLEAN NOT NULL, UNIQUE(id_aula, id_aluno), FOREIGN KEY (id_aula) REFERENCES Aulas(id_aula), FOREIGN KEY (id_aluno) REFERENCES Alunos(id_aluno));''')
     conn.commit()
 
-    # 3. POPULANDO OS DADOS
+    # 3. POPULANDO OS DADOS DE CADASTRO (Alunos e Disciplinas)
     aluno_map = {}; disciplina_map = {}; id_turma_padrao = 1
     
     cursor.execute("REPLACE INTO Turmas (id_turma, nome_turma, ano_letivo) VALUES (?, ?, ?)", (id_turma_padrao, "Exemplo 2025/1", 2025))
+    
     disciplinas_list = ["Português Instrumental", "Inglês Instrumental"]
-    for i, disc in enumerate(disciplinas_list): cursor.execute("REPLACE INTO Disciplinas (id_disciplina, nome_disciplina) VALUES (?, ?)", (i+1, disc))
+    for i, disc in enumerate(disciplinas_list): 
+        cursor.execute("REPLACE INTO Disciplinas (id_disciplina, nome_disciplina) VALUES (?, ?)", (i+1, disc))
     cursor.execute("SELECT id_disciplina, nome_disciplina FROM Disciplinas")
-    for id_disc, nome_disc in cursor.fetchall(): disciplina_map[nome_disc] = id_disc
+    for id_disc, nome_disc in cursor.fetchall(): 
+        disciplina_map[nome_disc] = id_disc
     
     alunos_list = list(diario_de_classe.keys())
     for i, aluno in enumerate(alunos_list): 
         cursor.execute("REPLACE INTO Alunos (id_aluno, nome, matricula) VALUES (?, ?, ?)", (i+1, aluno, f"MAT{2025000 + i + 1}"))
     cursor.execute("SELECT id_aluno, nome FROM Alunos")
-    for id_aluno, nome_aluno in cursor.fetchall(): aluno_map[nome_aluno] = id_aluno
+    for id_aluno, nome_aluno in cursor.fetchall(): 
+        aluno_map[nome_aluno] = id_aluno
 
-    # Retorno corrigido (retorna 3 valores, resolvendo o TypeError na main)
-    return aluno_map, disciplina_map, id_turma_padrao
+    conn.commit()
+    conn.close()
 
-# Função auxiliar para obter conexão
-def get_db_connection():
-    return sqlite3.connect(DB_NAME) 
+    # Retorna os mapas necessários para os selectboxes
+    return aluno_map, disciplina_map
+
 
 def calcular_media_final(avaliacoes):
-    p1_val = avaliacoes.get("P1")
-    p2_val = avaliacoes.get("P2")
-    p3_val = avaliacoes.get("P3")
-
-    # Correção da lógica: Garante que None/NaN sejam tratados como 0.0 na média parcial
-    p1 = float(p1_val) if pd.notna(p1_val) else 0.0
-    p2 = float(p2_val) if pd.notna(p2_val) else 0.0
+    p1_val = avaliacoes.get("P1"); p2_val = avaliacoes.get("P2"); p3_val = avaliacoes.get("P3")
+    
+    # Tratamento para garantir que None/NaN sejam 0.0 na média parcial
+    p1 = float(p1_val) if pd.notna(p1_val) and p1_val is not None else 0.0
+    p2 = float(p2_val) if pd.notna(p2_val) and p2_val is not None else 0.0
     
     p3 = None
-    if p3_val is not None and pd.notna(p3_val):
-        p3 = float(p3_val)
+    if p3_val is not None and pd.notna(p3_val): p3 = float(p3_val)
     
-    media_parcial = (p1 + p2) / 2 
+    media_parcial = (p1 + p2) / 2
     nota_final = media_parcial
     situacao_nota = ""
     
-    # Lógica de cálculo 
     if media_parcial >= NOTA_APROVACAO_DIRETA:
         situacao_nota = "APROVADO POR MÉDIA"
     elif media_parcial >= NOTA_MINIMA_P3:
-        if p3 is None:
-            situacao_nota = "PENDENTE (AGUARDANDO P3)"
+        if p3 is None: situacao_nota = "PENDENTE (AGUARDANDO P3)"
         else:
             media_final_com_p3 = (media_parcial + p3) / 2
             nota_final = media_final_com_p3
-            if nota_final >= NOTA_MINIMA_FINAL:
-                situacao_nota = "APROVADO APÓS P3"
-            else:
-                situacao_nota = "REPROVADO POR NOTA"
-    else: 
-        situacao_nota = "REPROVADO DIRETO"
-        
+            if nota_final >= NOTA_MINIMA_FINAL: situacao_nota = "APROVADO APÓS P3"
+            else: situacao_nota = "REPROVADO POR NOTA"
+    else: situacao_nota = "REPROVADO DIRETO"
+    
     return nota_final, situacao_nota, media_parcial
 
 def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
@@ -142,8 +111,15 @@ def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
         cursor.execute("""INSERT INTO Aulas (id_turma, id_disciplina, data_aula, conteudo_lecionado) VALUES (?, ?, ?, ?)""", (id_turma_padrao, id_disciplina, data_aula, conteudo))
         conn.commit()
         id_aula = cursor.lastrowid
+        
+        # Garante que a consulta de alunos retorne dados para a inserção de frequência
         cursor.execute("SELECT id_aluno FROM Alunos")
         alunos_ids = [row[0] for row in cursor.fetchall()]
+        
+        if not alunos_ids:
+            st.warning("⚠️ Alunos não encontrados no DB. Por favor, recarregue a página.")
+            return
+
         registros_frequencia = [(id_aula, id_aluno, 1) for id_aluno in alunos_ids]
         cursor.executemany("""INSERT INTO Frequencia (id_aula, id_aluno, presente) VALUES (?, ?, ?)""", registros_frequencia)
         conn.commit()
@@ -190,6 +166,11 @@ def obter_frequencia_por_aula(id_disciplina, data_aula):
         ORDER BY A.nome;
     """, conn)
     conn.close()
+    
+    # Adiciona tratamento para DataFrame vazio para evitar KeyError na interface
+    if df.empty:
+        return None, f"Nenhum registro de frequência encontrado para a Aula ID: {id_aula}."
+        
     df['Status Atual'] = df['presente'].apply(lambda x: 'PRESENTE ✅' if x == 1 else 'FALTA 🚫')
     df['Opção'] = df['id_frequencia'].astype(str) + ' - ' + df['Aluno']
     return df, id_aula
@@ -230,11 +211,19 @@ def gerar_relatorio_final_completo():
         st.error(f"❌ ERRO FATAL na consulta SQL/Pandas. Verifique a estrutura do DB. Mensagem: {e}")
         return
 
+    # Tratamento para evitar KeyError se a consulta não retornar dados
+    if df_relatorio.empty:
+        st.info("Nenhum dado de aluno/disciplina encontrado no DB para o relatório. Verifique a inicialização.")
+        return
+
     resultados_finais = []
     for index, row in df_relatorio.iterrows():
         total_aulas = row['Total_Aulas'] or 0; total_presencas = row['Total_Presencas'] or 0
         frequencia_percentual = (total_presencas / total_aulas * 100) if total_aulas > 0 else 0
-        avaliacoes = {"P1": row['P1'], "P2": row['P2'], "P3": row['P3']}
+        
+        # Corrigindo KeyError ao acessar P1, P2, P3:
+        avaliacoes = {"P1": row.get('P1'), "P2": row.get('P2'), "P3": row.get('P3')}
+        
         nota_final, situacao_nota, media_parcial = calcular_media_final(avaliacoes)
         situacao_frequencia = "REPROVADO POR FALTA" if frequencia_percentual < CORTE_FREQUENCIA else "APROVADO POR FREQUÊNCIA"
 
@@ -261,6 +250,7 @@ def gerar_relatorio_final_completo():
     df_final = pd.DataFrame(resultados_finais)
     st.dataframe(df_final.set_index(["Aluno", "Disciplina"]), use_container_width=True)
 
+
 # =========================================================================
 # FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
 # =========================================================================
@@ -269,20 +259,14 @@ def main():
     st.set_page_config(layout="wide")
     st.title("👨‍🏫 Diário de Classe Interativo")
     st.markdown("---")
+
+    # 1. INICIALIZAÇÃO DO DB e Persistência
+    # O cache garante que a criação do DB/tabelas rode apenas uma vez por app
+    aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
     
-    # 1. INICIALIZAÇÃO E POPULAÇÃO FORÇADA
-    # A função criar_e_popular_sqlite() é chamada aqui para garantir
-    # que o DB seja criado e populado em cada sessão na nuvem.
-    aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite() 
-    
-    # Esta linha força uma re-execução da inicialização, se necessário.
-    if 'db_initialized' not in st.session_state:
-        # Chamada extra para garantir que o DB exista antes de qualquer outra consulta
-        criar_e_popular_sqlite()
-        st.session_state['db_initialized'] = True 
-    
-    # Recebe os 3 valores, ignorando o id_turma_padrao com _
-    aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite()
+    # Inverte os mapas para usar o nome como label e o ID como valor
+    aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
+    disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
     # --- Layout da Interface ---
     
@@ -295,7 +279,6 @@ def main():
         data_input = col2.date_input('Data', value=date.today())
         conteudo = col3.text_input('Conteúdo da Aula')
         
-        # O valor do selectbox é o nome, precisamos do ID
         id_disciplina = disciplina_map_nome.get(disciplina_aula_nome)
 
         submitted_aula = st.form_submit_button("Lançar Aula e Marcar Todos Presentes")
@@ -315,21 +298,20 @@ def main():
     id_disciplina_chamada = disciplina_map_nome.get(disciplina_chamada_nome)
     
     if st.button("Carregar Chamada da Aula"):
-        # Armazena o DataFrame e o ID da Aula no Session State (estado do Streamlit)
-        df_frequencia_atual, id_aula = obter_frequencia_por_aula(id_disciplina_chamada, data_consulta.strftime("%Y-%m-%d"))
+        df_frequencia_atual, id_aula_ou_erro = obter_frequencia_por_aula(id_disciplina_chamada, data_consulta.strftime("%Y-%m-%d"))
         
         if isinstance(df_frequencia_atual, pd.DataFrame):
             st.session_state['df_chamada'] = df_frequencia_atual
-            st.session_state['id_aula'] = id_aula
-            st.session_state['msg_chamada'] = f"✅ Chamada Carregada (Aula ID: {id_aula})"
+            st.session_state['id_aula'] = id_aula_ou_erro
+            st.session_state['msg_chamada'] = f"✅ Chamada Carregada (Aula ID: {id_aula_ou_erro})"
         else:
             st.session_state['df_chamada'] = None
-            st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula}"
+            st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula_ou_erro}" # id_aula_ou_erro é a mensagem de erro
 
     # Exibe a tabela carregada
     if 'msg_chamada' in st.session_state:
         st.markdown(st.session_state['msg_chamada'])
-        if st.session_state['df_chamada'] is not None:
+        if st.session_state['df_chamada'] is not None and not st.session_state['df_chamada'].empty:
             st.dataframe(st.session_state['df_chamada'][['Aluno', 'Status Atual']], hide_index=True)
             st.markdown("---")
 
@@ -338,7 +320,6 @@ def main():
             
             df_chamada = st.session_state['df_chamada']
             
-            # Opções de ajuste: Nome do Aluno como Label, ID_Frequencia como Value
             opcoes_ajuste = {row['Aluno']: row['id_frequencia'] for index, row in df_chamada.iterrows()}
             
             col_aluno, col_status = st.columns([2, 1])
