@@ -186,7 +186,6 @@ def gerar_relatorio_final_completo():
         LEFT JOIN Aulas AU ON D.id_disciplina = AU.id_disciplina
         LEFT JOIN Frequencia F ON A.id_aluno = F.id_aluno AND AU.id_aula = F.id_aula
         GROUP BY A.nome, D.nome_disciplina;
-        """
         df_relatorio = pd.read_sql_query(query_sql_completa, conn)
 
     except Exception as e:
