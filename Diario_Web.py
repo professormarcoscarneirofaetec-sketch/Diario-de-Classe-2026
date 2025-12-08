@@ -258,6 +258,10 @@ def gerar_relatorio_final_completo(): # Nome da função definido corretamente a
 # FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
 # =========================================================================
 
+# =========================================================================
+# FUNÇÃO PRINCIPAL DO STREAMLIT (Interface) - VERSÃO FINAL
+# =========================================================================
+
 def main():
     # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
     st.set_page_config(layout="wide") 
@@ -302,7 +306,7 @@ def main():
             col1, col2, col3 = st.columns(3)
             
             disciplina_aula_nome = col1.selectbox('Disciplina', options=list(disciplina_map_nome.keys()))
-            data_input = col2.date_input('Data', value=datetime.date.today()) # Usando datetime.date.today()
+            data_input = col2.date_input('Data', value=datetime.date.today())
             conteudo = col3.text_input('Conteúdo da Aula')
             
             id_disciplina = disciplina_map_nome.get(disciplina_aula_nome)
@@ -319,7 +323,7 @@ def main():
         
         col1, col2 = st.columns(2)
         disciplina_chamada_nome = col1.selectbox('Disciplina (Ajuste)', options=list(disciplina_map_nome.keys()), key="sel_disc_chamada")
-        data_consulta = col2.date_input('Data da Aula (Ajuste)', value=datetime.date.today(), key="data_chamada") # Usando datetime.date.today()
+        data_consulta = col2.date_input('Data da Aula (Ajuste)', value=datetime.date.today(), key="data_chamada")
         
         id_disciplina_chamada = disciplina_map_nome.get(disciplina_chamada_nome)
         
@@ -387,6 +391,9 @@ def main():
         # =========================================================================
         # 4. Relatório Consolidado
         # =========================================================================
+        # =========================================================================
+        # 4. Relatório Consolidado
+        # =========================================================================
         st.header("📊 Relatório Consolidado")
         
         # 1. Chama a função para gerar o relatório e retorna o DataFrame
@@ -402,12 +409,12 @@ def main():
             col_csv.download_button(
                 label="⬇️ Gerar Conteúdo (CSV)",
                 data=csv_data,
-                file_name=f'Relatorio_Diario_Classe_{datetime.date.today()}.csv', # Usando datetime.date.today()
+                file_name=f'Relatorio_Diario_Classe_{datetime.date.today()}.csv',
                 mime='text/csv',
                 key='download_csv'
             )
             
-            # 3. BOTÃO IMPRIMIR RELATÓRIO (USANDO ST.BUTTON + JAVASCRIPT)
+            # 3. BOTÃO IMPRIMIR RELATÓRIO (SOLUÇÃO ESTÁVEL PARA STREAMLIT)
             if col_print.button("🖨️ Imprimir Relatório (Página Atual)"):
                 st.components.v1.html(
                     """
@@ -415,9 +422,9 @@ def main():
                         window.print();
                     </script>
                     """,
+                    # height e width definidos como 0 para ser invisível
                     height=0, width=0
                 )
-        
     elif username == "" and password == "":
         # Mensagem inicial para guiar o usuário (apenas se os campos estiverem vazios)
         st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
