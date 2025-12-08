@@ -394,6 +394,9 @@ def main():
         # =========================================================================
         # 4. Relatório Consolidado
         # =========================================================================
+       # =========================================================================
+        # 4. Relatório Consolidado
+        # =========================================================================
         st.header("📊 Relatório Consolidado")
         
         # 1. Chama a função para gerar o relatório e retorna o DataFrame
@@ -401,7 +404,7 @@ def main():
         
         if df_relatorio_final is not None and not df_relatorio_final.empty:
             st.markdown("---")
-            col_csv, col_print = st.columns([1, 4])
+            col_csv, col_spacer = st.columns([1, 4]) # O col_print foi substituído por col_spacer
             
             # 2. BOTÃO GERAR CONTEÚDO (CSV)
             # Transforma o DataFrame em CSV para download
@@ -413,7 +416,7 @@ def main():
                 mime='text/csv',
                 key='download_csv'
             )
-            
+            # O código do botão de impressão foi TOTALMENTE REMOVIDO daqui.
             # 3. BOTÃO IMPRIMIR RELATÓRIO (SOLUÇÃO ESTÁVEL PARA STREAMLIT)
             if col_print.button("🖨️ Imprimir Relatório (Página Atual)"):
                 st.components.v1.html(
