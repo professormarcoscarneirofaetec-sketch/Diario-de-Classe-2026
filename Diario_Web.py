@@ -1,14 +1,9 @@
-# Diario_Web.py (Código Final Corrigido para Streamlit com Login)
-
 import streamlit as st
 import sqlite3
 import pandas as pd
 import numpy as np
 from datetime import date
 
-# =========================================================================
-# CONSTANTES E DADOS DE EXEMPLO
-# =========================================================================
 CORTE_FREQUENCIA = 75
 NOTA_APROVACAO_DIRETA = 7.0
 NOTA_MINIMA_P3 = 4.0
@@ -22,17 +17,11 @@ diario_de_classe = {
     "Carol": {},
 }
 
-
-# =========================================================================
-# FUNÇÕES DE LÓGICA E BD
-# =========================================================================
-
 @st.cache_resource
 def criar_e_popular_sqlite():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # 1. DELETAR TABELAS ANTIGAS PARA GARANTIR ESTRUTURA CORRETA
     cursor.execute("DROP TABLE IF EXISTS Frequencia")
     cursor.execute("DROP TABLE IF EXISTS Notas")
     cursor.execute("DROP TABLE IF EXISTS Aulas")
@@ -41,7 +30,6 @@ def criar_e_popular_sqlite():
     cursor.execute("DROP TABLE IF EXISTS Turmas")
     conn.commit()
     
-    # 2. CRIAÇÃO DAS TABELAS
     cursor.execute('''CREATE TABLE Alunos (id_aluno INTEGER PRIMARY KEY, nome TEXT NOT NULL, matricula TEXT UNIQUE NOT NULL);''')
     cursor.execute('''CREATE TABLE Disciplinas (id_disciplina INTEGER PRIMARY KEY, nome_disciplina TEXT UNIQUE NOT NULL);''')
     cursor.execute('''CREATE TABLE Turmas (id_turma INTEGER PRIMARY KEY, nome_turma TEXT NOT NULL, ano_letivo INTEGER NOT NULL);''')
@@ -50,7 +38,6 @@ def criar_e_popular_sqlite():
     cursor.execute('''CREATE TABLE Frequencia (id_frequencia INTEGER PRIMARY KEY, id_aula INTEGER, id_aluno INTEGER, presente BOOLEAN NOT NULL, UNIQUE(id_aula, id_aluno), FOREIGN KEY (id_aula) REFERENCES Aulas(id_aula), FOREIGN KEY (id_aluno) REFERENCES Alunos(id_aluno));''')
     conn.commit()
 
-    # 3. POPULANDO OS DADOS DE CADASTRO (Alunos e Disciplinas)
     aluno_map = {}; disciplina_map = {}; id_turma_padrao = 1
     
     cursor.execute("REPLACE INTO Turmas (id_turma, nome_turma, ano_letivo) VALUES (?, ?, ?)", (id_turma_padrao, "Exemplo 2025/1", 2025))
@@ -72,14 +59,12 @@ def criar_e_popular_sqlite():
     conn.commit()
     conn.close()
 
-    # Retorna os mapas necessários para os selectboxes
     return aluno_map, disciplina_map
 
 
-def calcular_media_final(avaliacoes):
+    def calcular_media_final(avaliacoes):
     p1_val = avaliacoes.get("P1"); p2_val = avaliacoes.get("P2"); p3_val = avaliacoes.get("P3")
     
-    # Tratamento para garantir que None/NaN sejam 0.0 na média parcial
     p1 = float(p1_val) if pd.notna(p1_val) and p1_val is not None else 0.0
     p2 = float(p2_val) if pd.notna(p2_val) and p2_val is not None else 0.0
     
@@ -111,8 +96,7 @@ def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
         cursor.execute("""INSERT INTO Aulas (id_turma, id_disciplina, data_aula, conteudo_lecionado) VALUES (?, ?, ?, ?)""", (id_turma_padrao, id_disciplina, data_aula, conteudo))
         conn.commit()
         id_aula = cursor.lastrowid
-        
-        # Garante que a consulta de alunos retorne dados para a inserção de frequência
+
         cursor.execute("SELECT id_aluno FROM Alunos")
         alunos_ids = [row[0] for row in cursor.fetchall()]
         
@@ -149,8 +133,7 @@ def obter_frequencia_por_aula(id_disciplina, data_aula):
     id_turma_padrao = 1
     cursor.execute("""
         SELECT id_aula FROM Aulas WHERE id_turma = ? AND id_disciplina = ? AND data_aula = ?
-    """, (id_turma_padrao, id_disciplina, data_aula))
-    result = cursor.fetchone()
+      result = cursor.fetchone()
     if not result:
         conn.close()
         return None, "Aula não encontrada para essa data/disciplina."
@@ -167,8 +150,7 @@ def obter_frequencia_por_aula(id_disciplina, data_aula):
     """, conn)
     conn.close()
     
-    # Adiciona tratamento para DataFrame vazio para evitar KeyError na interface
-    if df.empty:
+        if df.empty:
         return None, f"Nenhum registro de frequência encontrado para a Aula ID: {id_aula}."
         
     df['Status Atual'] = df['presente'].apply(lambda x: 'PRESENTE ✅' if x == 1 else 'FALTA 🚫')
@@ -221,7 +203,6 @@ def gerar_relatorio_final_completo():
         total_aulas = row['Total_Aulas'] or 0; total_presencas = row['Total_Presencas'] or 0
         frequencia_percentual = (total_presencas / total_aulas * 100) if total_aulas > 0 else 0
         
-        # Corrigindo KeyError ao acessar P1, P2, P3:
         avaliacoes = {"P1": row.get('P1'), "P2": row.get('P2'), "P3": row.get('P3')}
         
         nota_final, situacao_nota, media_parcial = calcular_media_final(avaliacoes)
@@ -251,26 +232,16 @@ def gerar_relatorio_final_completo():
     st.dataframe(df_final.set_index(["Aluno", "Disciplina"]), use_container_width=True)
 
 
-# =========================================================================
-# FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
-# =========================================================================
-
-def main():
-    # 1. CONFIGURAÇÃO DA PÁGINA: Deve ser a primeira chamada Streamlit
+    def main():
     st.set_page_config(layout="wide") 
 
-    # 2. Exibe o título e o separador (antes do login)
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
 
-    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
-    # Tentamos ler as credenciais.
     try:
-        # 🔑 CORREÇÃO: As chaves DEVEM ser "app_password" e "app_user"
         SENHA_CORRETA = st.secrets["app_password"]
         usuario_correto = st.secrets["app_user"]
     except KeyError:
-        # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
         SENHA_CORRETA = ""
         usuario_correto = ""
         
@@ -278,20 +249,14 @@ def main():
     username = st.sidebar.text_input("Usuário")
     password = st.sidebar.text_input("Senha", type="password")
 
-    # 4. PORTÃO DE LOGIN
-    if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
+        if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
         st.sidebar.success("Login bem-sucedido!")
         
-        # --- APLICATIVO REAL INICIA AQUI (INDENTADO) ---
-        
-        # 1. INICIALIZAÇÃO DO DB e Persistência
         aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
         
-        # Inverte os mapas para usar o nome como label e o ID como valor
         aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
         disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
 
-        # 1. Lançamento de Aulas e Frequência
         st.header("🗓️ 1. Lançamento de Aulas")
         with st.form("form_aulas"):
             col1, col2, col3 = st.columns(3)
@@ -308,9 +273,7 @@ def main():
                 lancar_aula_e_frequencia(id_disciplina, data_input.strftime("%Y-%m-%d"), conteudo)
                 st.rerun() 
 
-
-        # 2. Painel de Chamada (Ajuste de Faltas)
-        st.header("📋 2. Ajuste de Faltas Pontuais")
+            st.header("📋 2. Ajuste de Faltas Pontuais")
         
         col1, col2 = st.columns(2)
         disciplina_chamada_nome = col1.selectbox('Disciplina (Ajuste)', options=list(disciplina_map_nome.keys()), key="sel_disc_chamada")
@@ -329,18 +292,15 @@ def main():
                 st.session_state['df_chamada'] = None
                 st.session_state['msg_chamada'] = f"❌ ERRO: {id_aula_ou_erro}" 
 
-        # Exibe a tabela carregada
-        if 'msg_chamada' in st.session_state:
+            if 'msg_chamada' in st.session_state:
             st.markdown(st.session_state['msg_chamada'])
             if st.session_state['df_chamada'] is not None and not st.session_state['df_chamada'].empty:
                 st.dataframe(st.session_state['df_chamada'][['Aluno', 'Status Atual']], hide_index=True)
                 st.markdown("---")
 
-                # Formulário de Ajuste
                 st.subheader("Alterar Status (Falta/Presença)")
                 
-                df_chamada = st.session_state['df_chamada']
-                
+                df_chamada = st.session_state['df_chamada']                
                 opcoes_ajuste = {row['Aluno']: row['id_frequencia'] for index, row in df_chamada.iterrows()}
                 
                 col_aluno, col_status = st.columns([2, 1])
@@ -357,8 +317,7 @@ def main():
                     st.rerun()
 
 
-        # 3. Lançamento de Notas
-        st.header("🖊️ 3. Lançamento de Notas")
+        st.header("🖊️ 3. Lançamento de Notas")
         with st.form("form_notas"):
             col1, col2, col3, col4 = st.columns(4)
             
@@ -379,7 +338,6 @@ def main():
 
         st.markdown("---")
 
-        # 4. Relatório Consolidado (Sempre no final)
         st.header("📊 Relatório Consolidado")
         gerar_relatorio_final_completo()
         
@@ -388,6 +346,5 @@ def main():
         return # Impede que o restante do app seja carregado
     
     else:
-        # Mensagem inicial para guiar o usuário
         st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
         return
