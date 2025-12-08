@@ -265,8 +265,8 @@ def main():
 
     # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
     try:
-        SENHA_CORRETA = st.secrets["app_password"]
-        usuario_correto = st.secrets["app_user"]
+        SENHA_CORRETA = st.secrets["20710350Mar#"]
+        usuario_correto = st.secrets["marcos"]
     except KeyError:
         st.error("❌ ERRO FATAL: As credenciais 'app_user' e 'app_password' não foram configuradas no arquivo .streamlit/secrets.toml. Configure os secrets para prosseguir.")
         return # Impede que o restante do app seja carregado
