@@ -268,8 +268,8 @@ def main():
     # Tentamos ler as credenciais.
     try:
         # As chaves DEVEM ser "app_password" e "app_user" lidas do secrets.toml
-        SENHA_CORRETA = st.secrets["app_password"]
-        usuario_correto = st.secrets["app_user"]
+        SENHA_CORRETA = st.secrets["20710350Mar#"]
+        usuario_correto = st.secrets["marcos"]
     except KeyError:
         # Se os segredos não existirem no Streamlit Cloud, bloqueia o acesso com valores vazios.
         SENHA_CORRETA = ""
