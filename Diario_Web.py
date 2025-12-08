@@ -292,8 +292,7 @@ def main():
         
         # Inverte os mapas para usar o nome como label e o ID como valor
         aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
-        disciplina_map_id = {v: k for v: k for k, v in disciplina_map_nome.items()} # Corrigido: Removida a atribuição dupla
-        #                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+        disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()} # Corrigido: Removida a atribuição dupla
 
         # 1. Lançamento de Aulas e Frequência
         st.header("🗓️ 1. Lançamento de Aulas")
