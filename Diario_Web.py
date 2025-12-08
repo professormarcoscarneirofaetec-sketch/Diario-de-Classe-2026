@@ -272,6 +272,10 @@ def main():
     
     # 1. INICIALIZAÇÃO CORRIGIDA (Remove o SyntaxError e corrige o retorno)
     # Recebe os 3 valores, ignorando o id_turma_padrao com _
+    aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite()
+    
+    # 1. INICIALIZAÇÃO CORRIGIDA (Remove o SyntaxError e corrige o retorno)
+    # Recebe os 3 valores, ignorando o id_turma_padrao com _
     aluno_map_nome, disciplina_map_nome, _ = criar_e_popular_sqlite() 
     
     # Inverte os mapas para uso na interface
