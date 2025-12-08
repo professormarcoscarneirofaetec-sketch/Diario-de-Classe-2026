@@ -1,10 +1,10 @@
-# Diario_Web.py (Código Final Corrigido para Streamlit com Login e Exportação)
+# Diario_Web.py (Código FINAL e Corrigido para Streamlit com Login e Exportação)
 
 import streamlit as st
 import sqlite3
 import pandas as pd
 import numpy as np
-from datetime import date
+import datetime
 
 # =========================================================================
 # CONSTANTES E DADOS DE EXEMPLO
@@ -21,7 +21,6 @@ diario_de_classe = {
     "Bruno": {},
     "Carol": {},
 }
-
 
 # =========================================================================
 # FUNÇÕES DE LÓGICA E BD
@@ -303,7 +302,7 @@ def main():
             col1, col2, col3 = st.columns(3)
             
             disciplina_aula_nome = col1.selectbox('Disciplina', options=list(disciplina_map_nome.keys()))
-            data_input = col2.date_input('Data', value=date.today())
+            data_input = col2.date_input('Data', value=datetime.date.today()) # Usando datetime.date.today()
             conteudo = col3.text_input('Conteúdo da Aula')
             
             id_disciplina = disciplina_map_nome.get(disciplina_aula_nome)
@@ -320,7 +319,7 @@ def main():
         
         col1, col2 = st.columns(2)
         disciplina_chamada_nome = col1.selectbox('Disciplina (Ajuste)', options=list(disciplina_map_nome.keys()), key="sel_disc_chamada")
-        data_consulta = col2.date_input('Data da Aula (Ajuste)', value=date.today(), key="data_chamada")
+        data_consulta = col2.date_input('Data da Aula (Ajuste)', value=datetime.date.today(), key="data_chamada") # Usando datetime.date.today()
         
         id_disciplina_chamada = disciplina_map_nome.get(disciplina_chamada_nome)
         
@@ -391,7 +390,6 @@ def main():
         st.header("📊 Relatório Consolidado")
         
         # 1. Chama a função para gerar o relatório e retorna o DataFrame
-       # 1. Chama a função para gerar o relatório e retorna o DataFrame
         df_relatorio_final = gerar_relatorio_final_completo()
         
         if df_relatorio_final is not None and not df_relatorio_final.empty:
@@ -404,57 +402,7 @@ def main():
             col_csv.download_button(
                 label="⬇️ Gerar Conteúdo (CSV)",
                 data=csv_data,
-                file_name=f'Relatorio_Diario_Classe_{date.today()}.csv',
-                mime='text/csv',
-                key='download_csv'
-            ) # <--- ✅ Adicionado o parêntese de fechamento aqui
-            
-           
-# 3. BOTÃO IMPRIMIR RELATÓRIO
-# (Usa um botão genérico que exige que o usuário imprima a página inteira)
-col_print.markdown(
-    f"""
-    <a href="javascript:window.print();">
-        <button style="border: none; padding: 10px 15px; background-color: #f0f2f6; color: black; border-radius: 5px; cursor: pointer;">
-            🖨️ Imprimir Relatório (Página Atual)
-        </button>
-    </a>
-    """,
-    unsafe_allow_html=True
-)
-            )
-        
-    elif username or password:
-        st.sidebar.error("Usuário ou senha incorretos.")
-        return # Impede que o restante do app seja carregado
-    
-    else:
-        # Mensagem inicial para guiar o usuário
-        st.info("Insira seu nome de usuário e senha na barra lateral para acessar o Diário de Classe.")
-        return 
-
-if __name__ == "__main__":
-    main()st.markdown("---")
-
-        # =========================================================================
-        # 4. Relatório Consolidado
-        # =========================================================================
-        st.header("📊 Relatório Consolidado")
-        
-        # 1. Chama a função para gerar o relatório e retorna o DataFrame
-        df_relatorio_final = gerar_relatorio_final_completo()
-        
-        if df_relatorio_final is not None and not df_relatorio_final.empty:
-            st.markdown("---")
-            col_csv, col_print = st.columns([1, 4])
-            
-            # 2. BOTÃO GERAR CONTEÚDO (CSV)
-            # Transforma o DataFrame em CSV para download
-            csv_data = df_relatorio_final.to_csv(index=False).encode('utf-8')
-            col_csv.download_button(
-                label="⬇️ Gerar Conteúdo (CSV)",
-                data=csv_data,
-                file_name=f'Relatorio_Diario_Classe_{date.today()}.csv',
+                file_name=f'Relatorio_Diario_Classe_{datetime.date.today()}.csv', # Usando datetime.date.today()
                 mime='text/csv',
                 key='download_csv'
             )
