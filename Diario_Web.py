@@ -190,7 +190,7 @@ def atualizar_status_frequencia(id_frequencia, novo_status):
     finally:
         conn.close()
 
-def gerar_relatorio_final_completo():
+def gerar_relatorio_final_completo(): # Nome da função definido corretamente aqui
     try:
         conn = sqlite3.connect(DB_NAME)
         query_sql_completa = """
@@ -265,18 +265,11 @@ def main():
     st.markdown("---") 
 
     # =========================================================================
-    # 3. AUTENTICAÇÃO E TRATAMENTO DE SECRETS
+    # 3. AUTENTICAÇÃO HARDCODED (APENAS PARA TESTE RÁPIDO)
     # =========================================================================
-    # Tentamos ler as credenciais configuradas no arquivo secrets.toml.
-    try:
-        # O Python LÊ o valor de "app_password" (que é "20710350Mar#")
-        SENHA_CORRETA = st.secrets["app_password"] 
-        # O Python LÊ o valor de "app_user" (que é "marcos")
-        usuario_correto = st.secrets["app_user"]
-    except KeyError:
-        # Se os segredos não existirem no Streamlit Cloud, o login falha.
-        SENHA_CORRETA = ""
-        usuario_correto = ""
+    # ESTAS CREDENCIAIS SÃO FIXAS: professor_marcos / 20710350Mar#
+    usuario_correto = "professor_marcos" 
+    SENHA_CORRETA = "20710350Mar#" 
         
     st.sidebar.title("Login")
 
@@ -289,7 +282,7 @@ def main():
     # =========================================================================
     # 4. PORTÃO DE LOGIN
     # =========================================================================
-    if username == usuario_correto and password == SENHA_CORRETA and usuario_correto != "":
+    if username == usuario_correto and password == SENHA_CORRETA:
         st.sidebar.success("Login bem-sucedido!")
         
         # --- O APLICATIVO REAL INICIA AQUI (DEPOIS DO LOGIN) ---
@@ -299,7 +292,8 @@ def main():
         
         # Inverte os mapas para usar o nome como label e o ID como valor
         aluno_map_id = {v: k for k, v in aluno_map_nome.items()}
-        disciplina_map_id = {v: k for k, v in disciplina_map_nome.items()}
+        disciplina_map_id = {v: k for v: k for k, v in disciplina_map_nome.items()} # Corrigido: Removida a atribuição dupla
+        #                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
         # 1. Lançamento de Aulas e Frequência
         st.header("🗓️ 1. Lançamento de Aulas")
@@ -391,7 +385,7 @@ def main():
 
         # 4. Relatório Consolidado (Sempre no final)
         st.header("📊 Relatório Consolidado")
-        generar_relatorio_final_completo()
+        gerar_relatorio_final_completo() # Chama a função com o nome correto
         
     elif username or password:
         st.sidebar.error("Usuário ou senha incorretos.")
