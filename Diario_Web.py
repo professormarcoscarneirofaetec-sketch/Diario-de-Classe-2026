@@ -1,28 +1,65 @@
-# Diario_Web.py (Código FINAL com Separação de Privilégios ADMIN/DEMO)
+# Diario_Web.py (Código FINAL com Lógica Premium e Login)
 
 import streamlit as st
 import sqlite3
 import pandas as pd
 import numpy as np
 import datetime
+import os 
+# --- NOVAS IMPORTAÇÕES PARA POSTGRESQL ---
+from sqlalchemy import create_engine
+import psycopg2
 
 # =========================================================================
-# CONSTANTES E DADOS DE EXEMPLO
+# 1. CONFIGURAÇÃO DE CONEXÃO E CONSTANTES
 # =========================================================================
+
+# URL EXTERNA COMPLETA DO SEU BANCO DE DADOS RENDER (USADA NO Streamlit)
+RENDER_DB_URL = "postgresql://diario_db_render_user:JVoTQlm0QaJC3l75fja0s7tLdxwQw5Zr@dpg-d4srpc63jp1c73eovq50-a.virginia-postgres.render.com/diario_db_render"
+
+# Link do Checkout do Mercado Pago (USADO NO BOTÃO DE UPGRADE)
+MP_CHECKOUT_LINK = "https://mpago.la/19wM16s" 
+
 CORTE_FREQUENCIA = 75
 NOTA_APROVACAO_DIRETA = 7.0
 NOTA_MINIMA_P3 = 4.0
 NOTA_MINIMA_FINAL = 5.0
-DB_NAME = 'diario_de_classe.db' 
+DB_NAME = 'diario_de_classe.db'
 
 diario_de_classe = {
-    "Alice": {}, 
+    "Alice": {},  
     "Bruno": {},
     "Carol": {},
 }
 
 # =========================================================================
-# FUNÇÕES DE LÓGICA E BD (Sem alterações nesta seção)
+# 2. FUNÇÕES DE CONEXÃO COM O RENDER (POSTGRESQL)
+# =========================================================================
+
+@st.cache_resource
+def get_db_engine():
+    """Cria e armazena o motor de conexão do Render (PostgreSQL) para reutilização."""
+    return create_engine(RENDER_DB_URL)
+
+def verificar_acesso_premium(email_usuario):
+    """Consulta o banco de dados do Render para verificar o status premium do usuário."""
+    engine = get_db_engine()
+    select_query = f"SELECT acesso_premium FROM professores WHERE email = '{email_usuario}'"
+    
+    try:
+        df = pd.read_sql_query(select_query, engine)
+        
+        if not df.empty:
+            return df['acesso_premium'].iloc[0] 
+        else:
+            return False 
+            
+    except Exception as e:
+        st.sidebar.error(f"⚠️ Erro no BD. Status Básico Ativo.")
+        return False
+
+# =========================================================================
+# 3. FUNÇÕES DE LÓGICA E BD (SQLite) - SUAS FUNÇÕES ORIGINAIS
 # =========================================================================
 
 @st.cache_resource
@@ -37,7 +74,7 @@ def criar_e_popular_sqlite():
     cursor.execute("DROP TABLE IF EXISTS Disciplinas")
     cursor.execute("DROP TABLE IF EXISTS Turmas")
     conn.commit()
-    
+     
     cursor.execute('''CREATE TABLE Alunos (id_aluno INTEGER PRIMARY KEY, nome TEXT NOT NULL, matricula TEXT UNIQUE NOT NULL);''')
     cursor.execute('''CREATE TABLE Disciplinas (id_disciplina INTEGER PRIMARY KEY, nome_disciplina TEXT UNIQUE NOT NULL);''')
     cursor.execute('''CREATE TABLE Turmas (id_turma INTEGER PRIMARY KEY, nome_turma TEXT NOT NULL, ano_letivo INTEGER NOT NULL);''')
@@ -47,7 +84,6 @@ def criar_e_popular_sqlite():
     conn.commit()
 
     aluno_map = {}; disciplina_map = {}; id_turma_padrao = 1
-    
     cursor.execute("REPLACE INTO Turmas (id_turma, nome_turma, ano_letivo) VALUES (?, ?, ?)", (id_turma_padrao, "Exemplo 2025/1", 2025))
     
     disciplinas_list = ["Língua Portuguesa", "Matemática", "Ciências", "História", "Geografia", "Artes"]
@@ -66,9 +102,7 @@ def criar_e_popular_sqlite():
 
     conn.commit()
     conn.close()
-
     return aluno_map, disciplina_map
-
 
 def calcular_media_final(avaliacoes):
     p1_val = avaliacoes.get("P1"); p2_val = avaliacoes.get("P2"); p3_val = avaliacoes.get("P3")
@@ -96,7 +130,6 @@ def calcular_media_final(avaliacoes):
     
     return nota_final, situacao_nota, media_parcial
 
-
 def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -122,7 +155,6 @@ def lancar_aula_e_frequencia(id_disciplina, data_aula, conteudo):
     finally:
         conn.close()
 
-
 def inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota):
     if valor_nota is None or valor_nota < 0 or valor_nota > 10.0:
         st.warning("⚠️ Erro: Insira um valor de nota válido (0.0 a 10.0).")
@@ -136,7 +168,6 @@ def inserir_nota_no_db(id_aluno, id_disciplina, tipo_avaliacao, valor_nota):
     except Exception as e:
         st.error(f"❌ Erro ao inserir nota: {e}")
     finally: conn.close()
-
 
 def obter_frequencia_por_aula(id_disciplina, data_aula):
     conn = sqlite3.connect(DB_NAME)
@@ -185,7 +216,6 @@ def atualizar_status_frequencia(id_frequencia, novo_status):
         st.error(f"❌ Erro ao atualizar frequência: {e}")
     finally:
         conn.close()
-
 
 def gerar_relatorio_final_completo(): 
     try:
@@ -250,7 +280,7 @@ def gerar_relatorio_final_completo():
 
 
 # =========================================================================
-# FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
+# 4. FUNÇÃO PRINCIPAL DO STREAMLIT (Interface)
 # =========================================================================
 
 def main():
@@ -259,8 +289,6 @@ def main():
     st.title("👨‍🏫 Diário de Classe Interativo") 
     st.markdown("---") 
 
-    # 3. AUTENTICAÇÃO HARDCODED (SEPARAÇÃO DE PRIVILÉGIOS)
-    
     # ----------------------------------------
     # CONTAS COM ACESSO TOTAL (ILIMITADO - O SEU AMBIENTE)
     ADMIN_USER = "demonstracao" 
@@ -285,7 +313,7 @@ def main():
         st.session_state['is_restricted'] = None 
 
     # =========================================================================
-    # 4. PORTÃO DE LOGIN MÚLTIPLO E ARMAZENAMENTO DA SESSÃO 
+    # 5. PORTÃO DE LOGIN MÚLTIPLO E ARMAZENAMENTO DA SESSÃO 
     # =========================================================================
     
     login_successful = False
@@ -307,11 +335,39 @@ def main():
         usuario_logado = st.session_state.user_login_name 
         st.sidebar.success(f"Login bem-sucedido! Bem-vindo, {usuario_logado}.")
         
-        # ** APLICAÇÃO DA LIMITAÇÃO DE USO (AVISO LATERAL) **
+        # ** LÓGICA DE PREMIUM (INJETADA AQUI) **
+        if st.session_state.user_login_name == ADMIN_USER: # APENAS PARA O ADMIN
+            st.session_state['email_admin'] = 'professormarcoscarneirofaetec@gmail.com' 
+            
+            email_logado = st.session_state['email_admin']
+            is_premium = verificar_acesso_premium(email_logado)
+            
+            st.sidebar.markdown("---")
+            st.sidebar.header("Status da Conta Premium")
+            
+            if is_premium:
+                st.sidebar.success("✅ Você é Premium! Todos os recursos liberados.")
+            else:
+                st.sidebar.warning("🔒 Acesso Básico. Faça Upgrade para liberar tudo.")
+                
+                # Botão de Upgrade (HTML formatado)
+                st.sidebar.markdown(
+                    f"""
+                    <a href="{MP_CHECKOUT_LINK}" target="_blank">
+                        <button style="background-color: #009ee3; color: white; padding: 10px 20px; border-radius: 5px; border: none; font-weight: bold;">
+                            Fazer Upgrade para Premium!
+                        </button>
+                    </a>
+                    """,
+                    unsafe_allow_html=True
+                )
+        # ------------------------------------------
+
+        # APLICAÇÃO DA LIMITAÇÃO DE USO (AVISO LATERAL) 
         if st.session_state.is_restricted:
             st.sidebar.warning("⚠️ **Aviso Demo:** A modificação de dados existentes está bloqueada.")
             st.sidebar.info("Apenas a criação e visualização são permitidas.")
-        
+            
         # 1. INICIALIZAÇÃO DO DB e Persistência
         aluno_map_nome, disciplina_map_nome = criar_e_popular_sqlite()
         
@@ -374,7 +430,7 @@ def main():
                 aluno_ajuste = col_aluno.selectbox('Aluno para Ajuste', options=list(opcoes_ajuste.keys()))
                 novo_status_label = col_status.selectbox('Novo Status', options=['PRESENTE', 'FALTA'])
 
-                # --- BLOQUEIO CONDICIONAL ---
+                # --- BLOQUEIO CONDICIONAL (AGORA SÓ VERIFICA SE ESTÁ RESTRITO) ---
                 if st.button("Salvar Alteração de Frequência"):
                     
                     if st.session_state.is_restricted: # VERIFICA O NOVO FLAG DE RESTRIÇÃO
@@ -436,10 +492,9 @@ def main():
             )
             
     # -------------------------------------------------------------------------
-    # 5. LÓGICA DE FALHA DE LOGIN
+    # 6. LÓGICA DE FALHA DE LOGIN
     # -------------------------------------------------------------------------
     else:
-        # Se o login falhar
         if username or password: 
             st.sidebar.error("Usuário ou senha incorretos.")
         
